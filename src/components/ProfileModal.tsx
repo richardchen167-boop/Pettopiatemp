@@ -1,0 +1,426 @@
+import { useState, useEffect } from 'react';
+import { supabase, type Pet, type UserSettings } from '../lib/supabase';
+import { X, Edit2, Save, ArrowRightLeft, UserPlus, UserMinus } from 'lucide-react';
+import { getUserSessionTime, formatTimeSpent } from '../hooks/useTimeTracking';
+
+const PET_EMOJIS: Record<Pet['type'], string> = {
+  cat: '🐱',
+  dog: '🐶',
+  fox: '🦊',
+  bird: '🐦',
+  rabbit: '🐰',
+  bear: '🐻',
+  panda: '🐼',
+  koala: '🐨',
+  hamster: '🐹',
+  mouse: '🐭',
+  pig: '🐷',
+  frog: '🐸',
+  monkey: '🐵',
+  lion: '🦁',
+  tiger: '🐯',
+  cow: '🐮',
+  turkey: '🦃',
+  dragon: '🐉',
+  shark: '🦈',
+  seal: '🦭',
+  crocodile: '🐊',
+  flamingo: '🦩',
+  duck: '🦆',
+  turtle: '🐢',
+  butterfly: '🦋',
+  elephant: '🐘',
+  giraffe: '🦒',
+  dinosaur: '🦕',
+  crab: '🦀',
+  lobster: '🦞',
+  shrimp: '🦐',
+  squid: '🦑',
+  octopus: '🐙',
+  pufferfish: '🐡',
+  eagle: '🦅',
+  owl: '🦉',
+  bat: '🦇',
+  bee: '🐝',
+  unicorn: '🦄',
+  boar: '🐗',
+  dolphin: '🐬',
+  whale: '🐳',
+  leopard: '🐆',
+  swan: '🦢',
+  parrot: '🦜',
+  badger: '🦡',
+  rat: '🐀',
+  squirrel: '🐿',
+  hedgehog: '🦔',
+  rhino: '🦏',
+  waterbuffalo: '🐃',
+  kangaroo: '🦘',
+  camel: '🐫',
+  dromedary: '🐪',
+  ox: '🐂',
+  horse: '🐎',
+  ram: '🐏',
+  deer: '🦌',
+  goat: '🐐',
+  sheep: '🐑'
+};
+
+interface ProfileModalProps {
+  userId: string;
+  ownerName: string;
+  onClose: () => void;
+}
+
+export function ProfileModal({ userId, ownerName, onClose }: ProfileModalProps) {
+  const [userPets, setUserPets] = useState<Pet[]>([]);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedBio, setEditedBio] = useState('');
+  const [editedDisplayName, setEditedDisplayName] = useState('');
+  const [totalTime, setTotalTime] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+
+  useEffect(() => {
+    loadProfile();
+
+    const intervalId = setInterval(async () => {
+      const time = await getUserSessionTime(userId);
+      setTotalTime(time);
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [userId]);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+
+      const { data: pets } = await supabase
+        .from('pets')
+        .select('*')
+        .eq('user_id', userId)
+        .order('level', { ascending: false });
+
+      setUserPets(pets || []);
+
+      const { data: settings } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (settings) {
+        setUserSettings(settings);
+        setEditedBio(settings.bio || '');
+        setEditedDisplayName(settings.display_name || '');
+      }
+
+      const time = await getUserSessionTime(userId);
+      setTotalTime(time);
+
+      const { count: followersCount } = await supabase
+        .from('user_followers')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', userId);
+
+      setFollowersCount(followersCount || 0);
+
+      const { count: followingCount } = await supabase
+        .from('user_followers')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', userId);
+
+      setFollowingCount(followingCount || 0);
+
+      if (user?.id && user.id !== userId) {
+        const { data: followData } = await supabase
+          .from('user_followers')
+          .select('id')
+          .eq('follower_id', user.id)
+          .eq('following_id', userId)
+          .maybeSingle();
+
+        setIsFollowing(!!followData);
+      } else {
+        setIsFollowing(false);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!currentUserId || currentUserId !== userId) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: userId,
+          bio: editedBio,
+          display_name: editedDisplayName || null,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      await loadProfile();
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile');
+    }
+  };
+
+  const sendTradeRequest = async (pet: Pet) => {
+    if (!currentUserId) return;
+
+    try {
+      await supabase
+        .from('trade_requests')
+        .insert({
+          sender_id: currentUserId,
+          recipient_id: pet.user_id,
+          sender_pet_id: '',
+          recipient_pet_id: pet.id,
+          message: `I'm interested in trading for ${pet.name}!`
+        });
+
+      alert('Trade request sent!');
+    } catch (error) {
+      console.error('Error sending trade request:', error);
+      alert('Failed to send trade request');
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!currentUserId || currentUserId === userId) return;
+
+    try {
+      if (isFollowing) {
+        await supabase
+          .from('user_followers')
+          .delete()
+          .eq('follower_id', currentUserId)
+          .eq('following_id', userId);
+      } else {
+        await supabase
+          .from('user_followers')
+          .insert({
+            follower_id: currentUserId,
+            following_id: userId
+          });
+      }
+
+      await loadProfile();
+    } catch (error) {
+      console.error('Error following/unfollowing user:', error);
+      alert('Failed to update follow status');
+    }
+  };
+
+  const isOwnProfile = currentUserId === userId;
+  const displayName = userSettings?.display_name || userSettings?.username || ownerName;
+  const actualUsername = userSettings?.username || ownerName;
+  const canTrade = !isOwnProfile && currentUserId && userSettings?.trades_enabled;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 z-50"
+        onClick={onClose}
+      />
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-lg shadow-2xl z-50 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-6">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-2xl font-bold">{displayName}</h2>
+              {userSettings?.display_name && (
+                <p className="text-sm text-blue-100">@{actualUsername}</p>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+          {!isOwnProfile && currentUserId && (
+            <button
+              onClick={handleFollow}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                isFollowing
+                  ? 'bg-white/20 hover:bg-white/30 text-white'
+                  : 'bg-white text-blue-600 hover:bg-blue-50'
+              }`}
+            >
+              {isFollowing ? (
+                <>
+                  <UserMinus size={18} />
+                  Unfollow
+                </>
+              ) : (
+                <>
+                  <UserPlus size={18} />
+                  Follow
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading profile...</div>
+        ) : (
+          <div className="p-6 space-y-6">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-gray-800">About Me</h3>
+                {isOwnProfile && !isEditing && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm"
+                  >
+                    <Edit2 size={14} />
+                    Edit
+                  </button>
+                )}
+                {isOwnProfile && isEditing && (
+                  <button
+                    onClick={saveProfile}
+                    className="text-green-600 hover:text-green-700 flex items-center gap-1 text-sm"
+                  >
+                    <Save size={14} />
+                    Save
+                  </button>
+                )}
+              </div>
+
+              {isEditing ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Display Name (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={editedDisplayName}
+                      onChange={(e) => setEditedDisplayName(e.target.value)}
+                      placeholder={ownerName}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      maxLength={50}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bio
+                    </label>
+                    <textarea
+                      value={editedBio}
+                      onChange={(e) => setEditedBio(e.target.value)}
+                      placeholder="Tell others about yourself..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows={4}
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {editedBio.length}/500 characters
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {userSettings?.bio || 'No bio yet.'}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="bg-white border-2 border-blue-100 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {userPets.length}
+                </div>
+                <div className="text-sm text-gray-600">Pets</div>
+              </div>
+              <div className="bg-white border-2 border-purple-100 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {followersCount}
+                </div>
+                <div className="text-sm text-gray-600">Followers</div>
+              </div>
+              <div className="bg-white border-2 border-pink-100 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-pink-600">
+                  {followingCount}
+                </div>
+                <div className="text-sm text-gray-600">Following</div>
+              </div>
+              <div className="bg-white border-2 border-cyan-100 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-cyan-600">
+                  {userPets.reduce((sum, pet) => sum + pet.level, 0)}
+                </div>
+                <div className="text-sm text-gray-600">Total Levels</div>
+              </div>
+              <div className="bg-white border-2 border-green-100 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {formatTimeSpent(totalTime)}
+                </div>
+                <div className="text-sm text-gray-600">Time Spent</div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-800 mb-3">My Pets</h3>
+              {userPets.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  <div className="text-4xl mb-2">🐾</div>
+                  <p>No pets yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {userPets.map((pet) => (
+                    <div
+                      key={pet.id}
+                      className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 text-center hover:shadow-md transition-shadow"
+                    >
+                      <div className="text-4xl mb-2">{PET_EMOJIS[pet.type]}</div>
+                      <h4 className="font-bold text-gray-800">{pet.name}</h4>
+                      <div className="text-xs text-gray-600 flex items-center justify-center gap-2 mt-1">
+                        <span>Lv. {pet.level}</span>
+                        <span>•</span>
+                        <span>{pet.coins} 🪙</span>
+                      </div>
+                      {canTrade && (
+                        <button
+                          onClick={() => sendTradeRequest(pet)}
+                          className="mt-2 w-full flex items-center justify-center gap-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-2 py-1.5 rounded text-xs font-semibold transition-colors"
+                        >
+                          <ArrowRightLeft size={12} />
+                          Trade
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
