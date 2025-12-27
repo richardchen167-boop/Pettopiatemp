@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export function AnimatedSleigh() {
   const [position, setPosition] = useState({ x: 100, y: 100 });
-  const [velocity, setVelocity] = useState({ x: 2, y: 1.5 });
+  const [velocity, setVelocity] = useState({ x: 2, y: -1.5 });
   const [direction, setDirection] = useState<'right' | 'left'>('right');
 
   useEffect(() => {

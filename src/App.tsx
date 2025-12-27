@@ -1695,12 +1695,35 @@ function App() {
               type="password"
               value={adminCode}
               onChange={(e) => setAdminCode(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyPress={async (e) => {
                 if (e.key === 'Enter') {
                   if (adminCode === 'TADC6767REALIE') {
-                    setShowUpperAdmin(true);
-                    setShowCodePrompt(false);
-                    setAdminCode('');
+                    try {
+                      await supabase.rpc('add_first_admin', { new_admin_id: userId });
+
+                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
+
+                      if (isAdmin) {
+                        setShowUpperAdmin(true);
+                        setShowCodePrompt(false);
+                        setAdminCode('');
+                        alert('Admin access granted!');
+                      } else {
+                        alert('You need to be granted admin access by an existing super admin.');
+                        setAdminCode('');
+                      }
+                    } catch (error: any) {
+                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
+
+                      if (isAdmin) {
+                        setShowUpperAdmin(true);
+                        setShowCodePrompt(false);
+                        setAdminCode('');
+                      } else {
+                        alert('You need to be granted admin access by an existing super admin.');
+                        setAdminCode('');
+                      }
+                    }
                   } else {
                     alert('Incorrect code!');
                     setAdminCode('');
@@ -1721,11 +1744,34 @@ function App() {
                 Cancel
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (adminCode === 'TADC6767REALIE') {
-                    setShowUpperAdmin(true);
-                    setShowCodePrompt(false);
-                    setAdminCode('');
+                    try {
+                      await supabase.rpc('add_first_admin', { new_admin_id: userId });
+
+                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
+
+                      if (isAdmin) {
+                        setShowUpperAdmin(true);
+                        setShowCodePrompt(false);
+                        setAdminCode('');
+                        alert('Admin access granted!');
+                      } else {
+                        alert('You need to be granted admin access by an existing super admin.');
+                        setAdminCode('');
+                      }
+                    } catch (error: any) {
+                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
+
+                      if (isAdmin) {
+                        setShowUpperAdmin(true);
+                        setShowCodePrompt(false);
+                        setAdminCode('');
+                      } else {
+                        alert('You need to be granted admin access by an existing super admin.');
+                        setAdminCode('');
+                      }
+                    }
                   } else {
                     alert('Incorrect code!');
                     setAdminCode('');
