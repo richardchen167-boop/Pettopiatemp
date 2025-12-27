@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Users, Clock, ArrowRightLeft, Ban } from 'lucide-react';
 import { getUserSessionTime, formatTimeSpent } from '../hooks/useTimeTracking';
 import { ProfileModal } from './ProfileModal';
+import { AnimatedSleigh } from './AnimatedSleigh';
 
 interface UserInfo {
   userId: string;
@@ -175,9 +176,7 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
                   🎄
                 </div>
 
-                <div className="absolute top-1/2 -translate-y-1/2 text-5xl animate-sleigh-ride">
-                  🦌🦌🦌🦌🛷
-                </div>
+                <AnimatedSleigh />
                 <div className="absolute top-32 left-16 text-4xl animate-spin-slow">
                   ❄️
                 </div>
