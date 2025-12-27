@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 export function AnimatedSleigh() {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [velocity, setVelocity] = useState({ x: 2, y: -1.5 });
-  const [direction, setDirection] = useState<'right' | 'left'>('right');
+  const [direction, setDirection] = useState<'right' | 'left'>('left');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -22,7 +22,7 @@ export function AnimatedSleigh() {
         if (newX <= 0 || newX >= maxX) {
           newVelX = -newVelX;
           newX = Math.max(0, Math.min(maxX, newX));
-          newDir = newVelX > 0 ? 'right' : 'left';
+          newDir = newVelX > 0 ? 'left' : 'right';
         }
 
         if (newY <= 0 || newY >= maxY) {
