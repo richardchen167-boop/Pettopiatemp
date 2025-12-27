@@ -59,30 +59,35 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
     try {
       const { data: allUsers, error } = await supabase
         .from('user_settings')
-        .select('user_id')
+        .select('user_id, username, display_name, trades_enabled')
         .order('username', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user_settings:', error);
+        throw error;
+      }
 
-      const uniqueUserIds = allUsers?.map(u => u.user_id) || [];
+      if (!allUsers || allUsers.length === 0) {
+        console.log('No users found in user_settings');
+        setUniqueUserCount(0);
+        setUsers([]);
+        return;
+      }
+
+      const uniqueUserIds = allUsers.map(u => u.user_id);
       setUniqueUserCount(uniqueUserIds.length);
 
       const times: Record<string, number> = {};
       const userInfos: UserInfo[] = [];
 
-      for (const userId of uniqueUserIds) {
+      for (const userData of allUsers) {
+        const userId = userData.user_id;
         times[userId] = await getUserSessionTime(userId);
-
-        const { data: settingsData } = await supabase
-          .from('user_settings')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
 
         const { data: userPets } = await supabase
           .from('pets')
           .select('id')
-          .eq('user_id', userId);
+          .eq('user_id', userId.toString());
 
         let isBanned = false;
         if (isUpperAdmin) {
@@ -98,10 +103,10 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
         if (!isBanned) {
           userInfos.push({
             userId,
-            username: settingsData?.username || 'Anonymous',
-            displayName: settingsData?.display_name || null,
+            username: userData.username || 'Anonymous',
+            displayName: userData.display_name || null,
             petCount: userPets?.length || 0,
-            tradesEnabled: settingsData?.trades_enabled || false,
+            tradesEnabled: userData.trades_enabled || false,
             isBanned: false
           });
         }
@@ -109,6 +114,7 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
 
       setOwnerTimes(times);
       setUsers(userInfos);
+      console.log(`Loaded ${userInfos.length} users`);
     } catch (error) {
       console.error('Error loading users:', error);
     }
