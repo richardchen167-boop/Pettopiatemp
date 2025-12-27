@@ -1431,6 +1431,11 @@ function App() {
   return (
     <div className={`min-h-screen relative ${isNovember ? 'bg-gradient-to-br from-orange-700 via-orange-600 to-amber-600' : isDecember ? 'bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-900' : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50'}`}>
       {isDecember && <ChristmasDecorations />}
+      {isDecember && (
+        <div className="fixed bottom-8 right-32 text-8xl animate-bounce pointer-events-none z-10" style={{ animationDuration: '3s' }}>
+          🛷
+        </div>
+      )}
       {isNovember && (
         <>
           <div className="fixed left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-amber-900/40 to-transparent pointer-events-none z-10 border-r-4 border-amber-800/30">

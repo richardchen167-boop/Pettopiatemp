@@ -4,7 +4,7 @@ import { X, Coins } from 'lucide-react';
 type PetType = 'cat' | 'dog' | 'fox' | 'bird' | 'rabbit' | 'bear' | 'panda' | 'koala' | 'hamster' | 'mouse' | 'pig' | 'frog' | 'monkey' | 'lion' | 'tiger' | 'cow' | 'turkey' | 'dragon' | 'shark' | 'seal' | 'crocodile' | 'flamingo' | 'duck' | 'turtle' | 'butterfly' | 'elephant' | 'giraffe' | 'dinosaur' | 'crab' | 'lobster' | 'shrimp' | 'squid' | 'octopus' | 'pufferfish' | 'eagle' | 'owl' | 'bat' | 'bee' | 'unicorn' | 'boar' | 'dolphin' | 'whale' | 'leopard' | 'swan' | 'parrot' | 'badger' | 'rat' | 'squirrel' | 'hedgehog' | 'rhino' | 'waterbuffalo' | 'kangaroo' | 'camel' | 'dromedary' | 'ox' | 'horse' | 'ram' | 'deer' | 'goat' | 'sheep';
 
 interface AdoptPetModalProps {
-  onAdopt: (name: string, type: PetType, ownerName: string, breed?: string) => void;
+  onAdopt: (name: string, type: PetType, ownerName: string, breed?: string) => Promise<void>;
   onClose: () => void;
   highestPetLevel: number;
   existingOwnerName?: string | null;
@@ -100,6 +100,7 @@ export function AdoptPetModal({ onAdopt, onClose, highestPetLevel, existingOwner
   );
   const [petName, setPetName] = useState('');
   const [ownerName, setOwnerName] = useState(existingOwnerName || '');
+  const [isAdopting, setIsAdopting] = useState(false);
 
   const handleTypeChange = (type: PetType) => {
     setSelectedType(type);
@@ -115,10 +116,15 @@ export function AdoptPetModal({ onAdopt, onClose, highestPetLevel, existingOwner
   const adoptionCost = isAdminMode ? 0 : baseAdoptionCost;
   const canAfford = isAdminMode || totalCoins >= adoptionCost;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (petName.trim() && canAfford) {
-      onAdopt(petName.trim(), selectedType, ownerName.trim() || '', selectedBreed || undefined);
+    if (petName.trim() && canAfford && !isAdopting) {
+      setIsAdopting(true);
+      try {
+        await onAdopt(petName.trim(), selectedType, ownerName.trim() || '', selectedBreed || undefined);
+      } finally {
+        setIsAdopting(false);
+      }
     }
   };
 
@@ -286,16 +292,17 @@ export function AdoptPetModal({ onAdopt, onClose, highestPetLevel, existingOwner
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-semibold transition-colors"
+              disabled={isAdopting}
+              className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-800 rounded-xl font-semibold transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!petName.trim() || !canAfford}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl font-semibold transition-all shadow-lg disabled:shadow-none"
+              disabled={!petName.trim() || !canAfford || isAdopting}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl font-semibold transition-all shadow-lg disabled:shadow-none disabled:cursor-not-allowed"
             >
-              Adopt Pet
+              {isAdopting ? 'Adopting...' : 'Adopt Pet'}
             </button>
           </div>
         </form>
