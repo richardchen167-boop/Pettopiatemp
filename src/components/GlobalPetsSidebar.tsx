@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Clock, ArrowRightLeft, Ban, CheckCircle } from 'lucide-react';
+import { Users, Clock, ArrowRightLeft, Ban } from 'lucide-react';
 import { getUserSessionTime, formatTimeSpent } from '../hooks/useTimeTracking';
 import { ProfileModal } from './ProfileModal';
 
@@ -90,14 +90,18 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
           .eq('user_id', userId)
           .maybeSingle();
 
-        userInfos.push({
-          userId,
-          username: settingsData?.username || 'Anonymous',
-          displayName: settingsData?.display_name || null,
-          petCount: userPets?.length || 0,
-          tradesEnabled: settingsData?.trades_enabled || false,
-          isBanned: banData?.is_active || false
-        });
+        const isBanned = banData?.is_active || false;
+
+        if (!isBanned) {
+          userInfos.push({
+            userId,
+            username: settingsData?.username || 'Anonymous',
+            displayName: settingsData?.display_name || null,
+            petCount: userPets?.length || 0,
+            tradesEnabled: settingsData?.trades_enabled || false,
+            isBanned: false
+          });
+        }
       }
 
       setOwnerTimes(times);
@@ -123,19 +127,6 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
       await loadAllUsers();
     } catch (error) {
       console.error('Error banning user:', error);
-    }
-  };
-
-  const handleUnbanUser = async (userId: string) => {
-    try {
-      await supabase
-        .from('banned_users')
-        .update({ is_active: false })
-        .eq('user_id', userId);
-
-      await loadAllUsers();
-    } catch (error) {
-      console.error('Error unbanning user:', error);
     }
   };
 
@@ -342,16 +333,9 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
                     <div className="flex items-start gap-3">
                       <div className="text-4xl">👤</div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-gray-800 text-lg">
-                            {user.displayName || user.username}
-                          </h3>
-                          {user.isBanned && (
-                            <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded">
-                              BANNED
-                            </span>
-                          )}
-                        </div>
+                        <h3 className="font-bold text-gray-800 text-lg">
+                          {user.displayName || user.username}
+                        </h3>
                         {user.displayName && (
                           <p className="text-xs text-gray-500">@{user.username}</p>
                         )}
@@ -378,23 +362,13 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
                         View Profile
                       </button>
                       {isUpperAdmin && user.userId !== currentUserId && (
-                        user.isBanned ? (
-                          <button
-                            onClick={() => handleUnbanUser(user.userId)}
-                            className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-sm transition-colors"
-                            title="Unban user"
-                          >
-                            <CheckCircle size={16} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleBanUser(user.userId)}
-                            className="flex items-center gap-1 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-3 py-2 rounded-lg font-semibold text-sm transition-colors"
-                            title="Ban user"
-                          >
-                            <Ban size={16} />
-                          </button>
-                        )
+                        <button
+                          onClick={() => handleBanUser(user.userId)}
+                          className="flex items-center gap-1 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-3 py-2 rounded-lg font-semibold text-sm transition-colors"
+                          title="Ban user"
+                        >
+                          <Ban size={16} />
+                        </button>
                       )}
                     </div>
                   </div>
