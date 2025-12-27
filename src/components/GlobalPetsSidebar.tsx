@@ -84,13 +84,16 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
           .select('id')
           .eq('user_id', userId);
 
-        const { data: banData } = await supabase
-          .from('banned_users')
-          .select('is_active')
-          .eq('user_id', userId)
-          .maybeSingle();
+        let isBanned = false;
+        if (isUpperAdmin) {
+          const { data: banData } = await supabase
+            .from('banned_users')
+            .select('is_active')
+            .eq('user_id', userId)
+            .maybeSingle();
 
-        const isBanned = banData?.is_active || false;
+          isBanned = banData?.is_active || false;
+        }
 
         if (!isBanned) {
           userInfos.push({
