@@ -59,54 +59,46 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
     try {
       const { data: allUsers, error } = await supabase
         .from('user_settings')
-        .select('user_id, username, display_name, trades_enabled')
+        .select('user_id')
         .order('username', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching user_settings:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      if (!allUsers || allUsers.length === 0) {
-        console.log('No users found in user_settings');
-        setUniqueUserCount(0);
-        setUsers([]);
-        return;
-      }
-
-      const uniqueUserIds = allUsers.map(u => u.user_id);
+      const uniqueUserIds = allUsers?.map(u => u.user_id) || [];
       setUniqueUserCount(uniqueUserIds.length);
 
       const times: Record<string, number> = {};
       const userInfos: UserInfo[] = [];
 
-      for (const userData of allUsers) {
-        const userId = userData.user_id;
+      for (const userId of uniqueUserIds) {
         times[userId] = await getUserSessionTime(userId);
+
+        const { data: settingsData } = await supabase
+          .from('user_settings')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
 
         const { data: userPets } = await supabase
           .from('pets')
           .select('id')
-          .eq('user_id', userId.toString());
+          .eq('user_id', userId);
 
-        let isBanned = false;
-        if (isUpperAdmin) {
-          const { data: banData } = await supabase
-            .from('banned_users')
-            .select('is_active')
-            .eq('user_id', userId)
-            .maybeSingle();
+        const { data: banData } = await supabase
+          .from('banned_users')
+          .select('is_active')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-          isBanned = banData?.is_active || false;
-        }
+        const isBanned = banData?.is_active || false;
 
         if (!isBanned) {
           userInfos.push({
             userId,
-            username: userData.username || 'Anonymous',
-            displayName: userData.display_name || null,
+            username: settingsData?.username || 'Anonymous',
+            displayName: settingsData?.display_name || null,
             petCount: userPets?.length || 0,
-            tradesEnabled: userData.trades_enabled || false,
+            tradesEnabled: settingsData?.trades_enabled || false,
             isBanned: false
           });
         }
@@ -114,7 +106,6 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
 
       setOwnerTimes(times);
       setUsers(userInfos);
-      console.log(`Loaded ${userInfos.length} users`);
     } catch (error) {
       console.error('Error loading users:', error);
     }

@@ -89,30 +89,15 @@ export function useTimeTracking(userId: string) {
   return { totalTimeSeconds };
 }
 
-let sessionStartTimes: Record<string, number> = {};
-
 export async function getUserSessionTime(userId: string): Promise<number> {
   try {
-    if (!sessionStartTimes[userId]) {
-      sessionStartTimes[userId] = Date.now();
-    }
-
     const { data } = await supabase
       .from('user_sessions')
-      .select('total_time_seconds, last_active')
+      .select('total_time_seconds')
       .eq('user_id', userId)
       .maybeSingle();
 
-    const storedSeconds = data?.total_time_seconds || 0;
-    const lastActive = data?.last_active ? new Date(data.last_active).getTime() : Date.now();
-    const timeSinceLastActive = Math.floor((Date.now() - lastActive) / 1000);
-
-    if (timeSinceLastActive < 300) {
-      const currentSessionSeconds = Math.floor((Date.now() - sessionStartTimes[userId]) / 1000);
-      return storedSeconds + currentSessionSeconds;
-    }
-
-    return storedSeconds;
+    return data?.total_time_seconds || 0;
   } catch (error) {
     console.error('Error getting user session time:', error);
     return 0;
