@@ -21,6 +21,12 @@ interface GlobalPetsSidebarProps {
   isDecember?: boolean;
 }
 
+interface BannedUser {
+  userId: string;
+  username: string;
+  displayName: string | null;
+}
+
 interface Snowflake {
   id: number;
   left: number;
@@ -31,11 +37,14 @@ interface Snowflake {
 
 export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isDecember }: GlobalPetsSidebarProps) {
   const [users, setUsers] = useState<UserInfo[]>([]);
+  const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
   const [uniqueUserCount, setUniqueUserCount] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showBanned, setShowBanned] = useState(false);
   const [ownerTimes, setOwnerTimes] = useState<Record<string, number>>({});
   const [selectedProfile, setSelectedProfile] = useState<{ userId: string; ownerName: string } | null>(null);
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
+  const [unbanNotice, setUnbanNotice] = useState<string | null>(null);
 
   useEffect(() => {
     loadAllUsers();
@@ -70,6 +79,7 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
 
       const times: Record<string, number> = {};
       const userInfos: UserInfo[] = [];
+      const banned: BannedUser[] = [];
 
       for (const userId of uniqueUserIds) {
         times[userId] = await getUserSessionTime(userId);
@@ -93,7 +103,13 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
 
         const isBanned = banData?.is_active || false;
 
-        if (!isBanned) {
+        if (isBanned) {
+          banned.push({
+            userId,
+            username: settingsData?.username || 'Anonymous',
+            displayName: settingsData?.display_name || null
+          });
+        } else {
           userInfos.push({
             userId,
             username: settingsData?.username || 'Anonymous',
@@ -107,6 +123,7 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
 
       setOwnerTimes(times);
       setUsers(userInfos);
+      setBannedUsers(banned);
     } catch (error) {
       console.error('Error loading users:', error);
     }
@@ -128,6 +145,26 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
       await loadAllUsers();
     } catch (error) {
       console.error('Error banning user:', error);
+    }
+  };
+
+  const handleUnbanUser = async (userId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      await supabase
+        .from('banned_users')
+        .update({ is_active: false })
+        .eq('user_id', userId);
+
+      const bannedUser = users.find(u => u.userId === userId);
+      const username = bannedUser?.displayName || bannedUser?.username || 'User';
+      setUnbanNotice(`${username} has been unbanned!`);
+      setTimeout(() => setUnbanNotice(null), 3000);
+
+      await loadAllUsers();
+    } catch (error) {
+      console.error('Error unbanning user:', error);
     }
   };
 
@@ -304,10 +341,15 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
             `}</style>
           </div>
           <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto">
+            {unbanNotice && (
+              <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 m-3 rounded">
+                <p className="text-sm font-semibold">{unbanNotice}</p>
+              </div>
+            )}
             <div className={`sticky top-0 text-white p-4 flex items-center justify-between ${isDecember ? 'bg-gradient-to-r from-red-600 to-green-600' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`}>
               <div className="flex items-center gap-2">
                 <Users size={24} />
-                <h2 className="text-xl font-bold">All Users</h2>
+                <h2 className="text-xl font-bold">{showBanned ? 'Banned Users' : 'All Users'}</h2>
               </div>
               <button
                 onClick={() => setIsExpanded(false)}
@@ -317,8 +359,55 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
               </button>
             </div>
 
+            {isUpperAdmin && bannedUsers.length > 0 && (
+              <div className="sticky top-12 bg-gradient-to-r from-red-50 to-rose-50 border-b-2 border-red-200 p-3">
+                <button
+                  onClick={() => setShowBanned(!showBanned)}
+                  className="text-sm font-semibold text-red-600 hover:text-red-700"
+                >
+                  {showBanned ? '← Back to Active Users' : `View Banned (${bannedUsers.length})`}
+                </button>
+              </div>
+            )}
+
             <div className="p-4 space-y-3">
-              {users.length === 0 ? (
+              {showBanned ? (
+                bannedUsers.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    <div className="text-4xl mb-2">🚫</div>
+                    <p>No banned users</p>
+                  </div>
+                ) : (
+                  bannedUsers.map((user) => (
+                    <div
+                      key={user.userId}
+                      className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-4xl">🚫</div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-800 text-lg">
+                            {user.displayName || user.username}
+                          </h3>
+                          {user.displayName && (
+                            <p className="text-xs text-gray-500">@{user.username}</p>
+                          )}
+                        </div>
+                      </div>
+                      {isUpperAdmin && (
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            onClick={() => handleUnbanUser(user.userId)}
+                            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                          >
+                            Unban
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )
+              ) : users.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <div className="text-4xl mb-2">👥</div>
                   <p>No users found</p>
