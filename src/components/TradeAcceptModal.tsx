@@ -15,6 +15,7 @@ const ITEM_COLORS: Record<string, string> = {
   toy: 'border-yellow-400',
   furniture: 'border-amber-400',
   decor: 'border-green-400',
+  pet: 'border-red-400',
 };
 
 export function TradeAcceptModal({ trade, currentUserId, onClose, onComplete }: TradeAcceptModalProps) {

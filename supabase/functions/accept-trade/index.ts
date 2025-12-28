@@ -102,7 +102,14 @@ Deno.serve(async (req: Request) => {
     const recipientItems = tradeItems.filter((i) => !i.sender_offering);
 
     for (const item of senderItems) {
-      if (item.item_type === "furniture" || item.item_type === "decor") {
+      if (item.item_type === "pet") {
+        const { error: petError } = await supabase
+          .from("pets")
+          .update({ user_id: trade.recipient_id })
+          .eq("id", item.item_id);
+
+        if (petError) throw petError;
+      } else if (item.item_type === "furniture" || item.item_type === "decor") {
         const { error: transferError } = await supabase
           .from("house_inventory")
           .update({ user_id: trade.recipient_id })
@@ -164,7 +171,14 @@ Deno.serve(async (req: Request) => {
     }
 
     for (const item of recipientItems) {
-      if (item.item_type === "furniture" || item.item_type === "decor") {
+      if (item.item_type === "pet") {
+        const { error: petError } = await supabase
+          .from("pets")
+          .update({ user_id: trade.sender_id })
+          .eq("id", item.item_id);
+
+        if (petError) throw petError;
+      } else if (item.item_type === "furniture" || item.item_type === "decor") {
         const { error: transferError } = await supabase
           .from("house_inventory")
           .update({ user_id: trade.sender_id })

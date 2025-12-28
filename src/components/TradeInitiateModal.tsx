@@ -1,6 +1,69 @@
 import { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
-import { supabase, type AccessoryInventoryItem, type HouseInventoryItem } from '../lib/supabase';
+import { supabase, type AccessoryInventoryItem, type HouseInventoryItem, type Pet } from '../lib/supabase';
+
+const PET_EMOJIS: Record<Pet['type'], string> = {
+  cat: '🐱',
+  dog: '🐶',
+  fox: '🦊',
+  bird: '🐦',
+  rabbit: '🐰',
+  bear: '🐻',
+  panda: '🐼',
+  koala: '🐨',
+  hamster: '🐹',
+  mouse: '🐭',
+  pig: '🐷',
+  frog: '🐸',
+  monkey: '🐵',
+  lion: '🦁',
+  tiger: '🐯',
+  cow: '🐮',
+  turkey: '🦃',
+  dragon: '🐉',
+  shark: '🦈',
+  seal: '🦭',
+  crocodile: '🐊',
+  flamingo: '🦩',
+  duck: '🦆',
+  turtle: '🐢',
+  butterfly: '🦋',
+  elephant: '🐘',
+  giraffe: '🦒',
+  dinosaur: '🦕',
+  crab: '🦀',
+  lobster: '🦞',
+  shrimp: '🦐',
+  squid: '🦑',
+  octopus: '🐙',
+  pufferfish: '🐡',
+  eagle: '🦅',
+  owl: '🦉',
+  bat: '🦇',
+  bee: '🐝',
+  unicorn: '🦄',
+  boar: '🐗',
+  dolphin: '🐬',
+  whale: '🐳',
+  leopard: '🐆',
+  swan: '🦢',
+  parrot: '🦜',
+  badger: '🦡',
+  rat: '🐀',
+  squirrel: '🐿',
+  hedgehog: '🦔',
+  rhino: '🦏',
+  waterbuffalo: '🐃',
+  kangaroo: '🦘',
+  camel: '🐫',
+  dromedary: '🐪',
+  ox: '🐂',
+  horse: '🐎',
+  ram: '🐏',
+  deer: '🦌',
+  goat: '🐐',
+  sheep: '🐑'
+};
 
 interface TradeInitiateModalProps {
   recipientUserId: string;
@@ -16,6 +79,7 @@ const ITEM_COLORS: Record<string, string> = {
   toy: 'border-yellow-400 bg-yellow-50',
   furniture: 'border-amber-400 bg-amber-50',
   decor: 'border-green-400 bg-green-50',
+  pet: 'border-red-400 bg-red-50',
 };
 
 export function TradeInitiateModal({
@@ -27,6 +91,7 @@ export function TradeInitiateModal({
 }: TradeInitiateModalProps) {
   const [accessories, setAccessories] = useState<AccessoryInventoryItem[]>([]);
   const [houseItems, setHouseItems] = useState<HouseInventoryItem[]>([]);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -49,8 +114,15 @@ export function TradeInitiateModal({
         .eq('user_id', currentUserId)
         .eq('placed', false);
 
+      const { data: userPets } = await supabase
+        .from('pets')
+        .select('*')
+        .eq('user_id', currentUserId)
+        .order('created_at', { ascending: false });
+
       setAccessories(accessoryData || []);
       setHouseItems(houseData || []);
+      setPets(userPets || []);
     } catch (error) {
       console.error('Error loading inventory:', error);
     } finally {
@@ -117,6 +189,18 @@ export function TradeInitiateModal({
               item_name: houseItem.item_name,
               item_emoji: houseItem.item_emoji,
             };
+          } else {
+            const pet = pets.find(p => p.id === itemId);
+            if (pet) {
+              itemData = {
+                trade_request_id: tradeRequest.id,
+                sender_offering: true,
+                item_id: itemId,
+                item_type: 'pet',
+                item_name: pet.name,
+                item_emoji: PET_EMOJIS[pet.type],
+              };
+            }
           }
         }
 
@@ -153,6 +237,13 @@ export function TradeInitiateModal({
   }
 
   const allItems = [
+    ...pets.map(p => ({
+      id: p.id,
+      item_name: p.name,
+      item_emoji: PET_EMOJIS[p.type],
+      item_type: 'pet',
+      type: 'pet',
+    })),
     ...accessories.map(a => ({ ...a, type: a.item_type as string })),
     ...houseItems.map(h => ({ ...h, type: h.item_type })),
   ];
@@ -181,29 +272,67 @@ export function TradeInitiateModal({
             <p className="text-sm text-gray-400 mt-2">Visit the shop to get some items!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-96 overflow-y-auto mb-6 p-4 bg-white/50 rounded-xl">
-            {allItems.map((item) => {
-              const isSelected = selectedItems.has(item.id);
-              const colorClass = ITEM_COLORS[item.type] || 'border-gray-400 bg-gray-50';
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => toggleItem(item.id)}
-                  className={`aspect-square rounded-xl border-3 transition-all ${
-                    isSelected
-                      ? `${colorClass} ring-4 ring-pink-400 scale-105`
-                      : `${colorClass} hover:scale-105`
-                  }`}
-                  title={item.item_name}
-                >
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                    <div className="text-3xl">{item.item_emoji}</div>
-                    {isSelected && <div className="text-sm font-bold text-pink-600">✓</div>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <>
+            {pets.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-pink-700 mb-3">Your Pets</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                  {pets.map((pet) => {
+                    const isSelected = selectedItems.has(pet.id);
+                    return (
+                      <button
+                        key={pet.id}
+                        onClick={() => toggleItem(pet.id)}
+                        className={`rounded-xl border-3 border-red-400 transition-all p-3 ${
+                          isSelected
+                            ? 'bg-red-100 ring-4 ring-pink-400 scale-105'
+                            : 'bg-red-50 hover:scale-105'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="text-4xl">{PET_EMOJIS[pet.type]}</div>
+                          <div className="text-left flex-1">
+                            <div className="font-bold text-sm">{pet.name}</div>
+                            <div className="text-xs text-gray-600">Lv. {pet.level}</div>
+                          </div>
+                          {isSelected && <div className="text-lg font-bold text-pink-600">✓</div>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {(accessories.length > 0 || houseItems.length > 0) && (
+              <div>
+                <h3 className="text-sm font-bold text-pink-700 mb-3">Your Items</h3>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-4 bg-white/50 rounded-xl">
+                  {allItems.filter(item => item.type !== 'pet').map((item) => {
+                    const isSelected = selectedItems.has(item.id);
+                    const colorClass = ITEM_COLORS[item.type] || 'border-gray-400 bg-gray-50';
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => toggleItem(item.id)}
+                        className={`aspect-square rounded-xl border-3 transition-all ${
+                          isSelected
+                            ? `${colorClass} ring-4 ring-pink-400 scale-105`
+                            : `${colorClass} hover:scale-105`
+                        }`}
+                        title={item.item_name}
+                      >
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                          <div className="text-3xl">{item.item_emoji}</div>
+                          {isSelected && <div className="text-sm font-bold text-pink-600">✓</div>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <div className="flex gap-4">
