@@ -16,6 +16,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   const [selectedTab, setSelectedTab] = useState<'toy' | 'furniture' | 'decor' | 'chest'>('toy');
   const [chestCount, setChestCount] = useState(0);
   const [showChestOpening, setShowChestOpening] = useState(false);
+  const [chestPurchaseInProgress, setChestPurchaseInProgress] = useState(false);
 
   useEffect(() => {
     loadShopItems();
@@ -56,19 +57,34 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   };
 
   const buyChest = async () => {
-    if (purchasing) return;
+    if (purchasing || chestPurchaseInProgress) return;
     if (pet.coins < 200) {
       alert("Not enough coins! Chests cost 200 coins.");
       return;
     }
 
     setPurchasing(true);
+    setChestPurchaseInProgress(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         alert("Please log in to make purchases");
         setPurchasing(false);
+        setChestPurchaseInProgress(false);
+        return;
+      }
+
+      const { data: petData } = await supabase
+        .from('pets')
+        .select('coins')
+        .eq('id', pet.id)
+        .maybeSingle();
+
+      if (!petData || petData.coins < 200) {
+        alert("Insufficient coins. Purchase cancelled.");
+        setPurchasing(false);
+        setChestPurchaseInProgress(false);
         return;
       }
 
@@ -95,7 +111,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
       await supabase
         .from('pets')
         .update({
-          coins: pet.coins - 200,
+          coins: petData.coins - 200,
           updated_at: new Date().toISOString()
         })
         .eq('id', pet.id);
@@ -107,6 +123,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
       alert('Purchase failed. Please try again.');
     } finally {
       setPurchasing(false);
+      setChestPurchaseInProgress(false);
     }
   };
 
@@ -401,14 +418,14 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
                   <p className="text-sm text-amber-600 mb-4">200 coins</p>
                   <button
                     onClick={buyChest}
-                    disabled={pet.coins < 200 || purchasing}
+                    disabled={pet.coins < 200 || purchasing || chestPurchaseInProgress}
                     className={`w-full py-3 rounded-lg font-semibold transition-colors ${
-                      pet.coins >= 200 && !purchasing
+                      pet.coins >= 200 && !purchasing && !chestPurchaseInProgress
                         ? 'bg-amber-600 hover:bg-amber-700 text-white'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    {purchasing ? 'Processing...' : 'Buy'}
+                    {purchasing || chestPurchaseInProgress ? 'Processing...' : 'Buy'}
                   </button>
                 </div>
 
