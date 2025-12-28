@@ -81,20 +81,29 @@ export function UpperAdminPanel({ onClose, currentUserId, isSuperAdmin }: UpperA
 
   const handleBanUser = async (userId: string) => {
     try {
-      const { error } = await supabase
+      const { data: existing } = await supabase
         .from('banned_users')
-        .upsert({
-          user_id: userId,
-          banned_by: currentUserId,
-          banned_at: new Date().toISOString(),
-          reason: '',
-          is_active: true
-        });
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Ban error details:', error);
-        alert(`Failed to ban user: ${error.message}`);
-        return;
+      if (existing) {
+        const { error } = await supabase
+          .from('banned_users')
+          .update({ is_active: true })
+          .eq('user_id', userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('banned_users')
+          .insert({
+            user_id: userId,
+            banned_by: currentUserId,
+            banned_at: new Date().toISOString(),
+            reason: '',
+            is_active: true
+          });
+        if (error) throw error;
       }
 
       loadUsers();
