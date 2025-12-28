@@ -11,6 +11,7 @@ interface ShopModalProps {
 export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState(false);
   const isBird = pet.type === 'bird';
   const [selectedTab, setSelectedTab] = useState<'hat' | 'eyewear' | 'toy' | 'furniture' | 'decor'>(isBird ? 'toy' : 'hat');
 
@@ -35,64 +36,54 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   };
 
   const buyItem = async (item: ShopItem) => {
+    if (purchasing) return;
+
     if (pet.coins < item.price) {
       alert("Not enough coins!");
       return;
     }
 
-    try {
-      if (item.type === 'furniture' || item.type === 'decor') {
-        await supabase
-          .from('house_inventory')
-          .insert({
-            user_id: pet.user_id,
-            item_id: item.id,
-            item_name: item.name,
-            item_type: item.type,
-            item_emoji: item.emoji,
-            quantity: 1,
-            placed: false
-          });
-      } else {
-        const { data: existingItem } = await supabase
-          .from('accessory_inventory')
-          .select('*')
-          .eq('user_id', pet.user_id)
-          .eq('item_id', item.id)
-          .maybeSingle();
+    setPurchasing(true);
 
-        if (existingItem) {
-          await supabase
-            .from('accessory_inventory')
-            .update({
-              quantity: existingItem.quantity + 1
-            })
-            .eq('id', existingItem.id);
-        } else {
-          await supabase
-            .from('accessory_inventory')
-            .insert({
-              user_id: pet.user_id,
-              item_id: item.id,
-              item_name: item.name,
-              item_type: item.type,
-              item_emoji: item.emoji,
-              quantity: 1
-            });
-        }
+    try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        alert("Please log in to make purchases");
+        setPurchasing(false);
+        return;
       }
 
-      await supabase
-        .from('pets')
-        .update({
-          coins: pet.coins - item.price,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', pet.id);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/purchase-item`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.data.session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            petId: pet.id,
+            itemId: item.id,
+            itemPrice: item.price,
+            itemType: item.type,
+            itemName: item.name,
+            itemEmoji: item.emoji
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        alert(error || 'Purchase failed');
+        setPurchasing(false);
+        return;
+      }
 
       onPurchase();
     } catch (error) {
       console.error('Error buying item:', error);
+      alert('Purchase failed. Please try again.');
+      setPurchasing(false);
     }
   };
 
@@ -324,14 +315,14 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
                       ) : (
                         <button
                           onClick={() => buyItem(item)}
-                          disabled={!canAfford}
+                          disabled={!canAfford || purchasing}
                           className={`w-full py-2 rounded-lg font-semibold transition-colors text-sm ${
-                            canAfford
+                            canAfford && !purchasing
                               ? 'bg-purple-600 hover:bg-purple-700 text-white'
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
                         >
-                          {canAfford ? 'Buy' : 'Too Expensive'}
+                          {purchasing ? 'Processing...' : (canAfford ? 'Buy' : 'Too Expensive')}
                         </button>
                       )}
                     </div>
