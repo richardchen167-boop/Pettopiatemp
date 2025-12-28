@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CirclePlus as PlusCircle, Package, User, ShieldAlert } from 'lucide-react';
+import { CirclePlus as PlusCircle, Package, User, ShieldAlert, ShoppingBag } from 'lucide-react';
 import { supabase, type Pet, PET_EVENTS, type PetEventType, ACTIVITIES, type ActivityType, type HouseInventoryItem } from './lib/supabase';
 import { PetCard } from './components/PetCard';
 import { AdoptPetModal } from './components/AdoptPetModal';
@@ -1569,22 +1569,24 @@ function App() {
           <button
             onClick={() => {
               soundManager.play('click');
-              setShowInventory(true);
+              if (pets.length > 0) {
+                setSelectedPetForShop(pets[0]);
+              }
             }}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
           >
-            <Package size={24} />
-            Inventory
+            <ShoppingBag size={24} />
+            Shop
           </button>
           <button
             onClick={() => {
               soundManager.play('click');
               setShowInventory(true);
             }}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
           >
             <Package size={24} />
-            Shop
+            Inventory
           </button>
         </div>
 
@@ -1625,7 +1627,6 @@ function App() {
                     onClean={canControl ? () => cleanPet(pet) : () => showMessage("You can only interact with your own pets!")}
                     onGiveWater={canControl ? () => giveWater(pet) : () => showMessage("You can only interact with your own pets!")}
                     onPlayWithToy={canControl ? () => playWithToy(pet) : () => showMessage("You can only interact with your own pets!")}
-                    onOpenShop={canControl ? () => setSelectedPetForShop(pet) : () => showMessage("You can only interact with your own pets!")}
                     onOpenActivities={canControl ? () => setSelectedPetForActivities(pet) : () => showMessage("You can only interact with your own pets!")}
                     onDelete={canControl ? () => deletePet(pet) : () => showMessage("You can only interact with your own pets!")}
                     onDeactivate={canControl ? () => handleDeactivatePet(pet.id) : () => showMessage("You can only interact with your own pets!")}
