@@ -22,12 +22,25 @@ export function TradeInitiateModal({
   const handleInitiateTrade = async () => {
     setProcessing(true);
     try {
+      const { data: userPets } = await supabase
+        .from('pets')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .limit(1)
+        .maybeSingle();
+
+      if (!userPets) {
+        alert('You need at least one pet to start a trade!');
+        setProcessing(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('trade_requests')
         .insert({
           sender_id: currentUserId,
           recipient_id: recipientUserId,
-          sender_pet_id: '',
+          sender_pet_id: userPets.id,
           recipient_pet_id: null,
           message: `Let's trade!`,
           status: 'pending',
