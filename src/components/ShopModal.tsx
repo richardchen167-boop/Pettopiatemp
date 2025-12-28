@@ -13,8 +13,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
-  const isBird = pet.type === 'bird';
-  const [selectedTab, setSelectedTab] = useState<'hat' | 'eyewear' | 'toy' | 'furniture' | 'decor' | 'chest'>(isBird ? 'toy' : 'hat');
+  const [selectedTab, setSelectedTab] = useState<'toy' | 'furniture' | 'decor' | 'chest'>('toy');
   const [chestCount, setChestCount] = useState(0);
   const [showChestOpening, setShowChestOpening] = useState(false);
 
@@ -249,9 +248,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   };
 
   const filteredItems = shopItems.filter(item => item.type === selectedTab);
-  const currentAccessory = (selectedTab === 'hat' || selectedTab === 'eyewear' || selectedTab === 'toy')
-    ? pet.accessories[selectedTab]
-    : null;
+  const currentAccessory = selectedTab === 'toy' ? pet.accessories['toy'] : null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -276,38 +273,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
         </div>
 
         <div className="p-6">
-          {isBird ? (
-            <div className="mb-6 bg-blue-50 border-2 border-blue-300 rounded-xl p-4 text-center">
-              <p className="text-blue-800 font-semibold">Birds can only have toys!</p>
-              <p className="text-blue-600 text-sm mt-1">Hats and eyewear aren't suitable for our feathered friends.</p>
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-6 gap-2 mb-6">
-            {!isBird && (
-              <>
-                <button
-                  onClick={() => setSelectedTab('hat')}
-                  className={`py-3 px-2 rounded-xl font-semibold transition-all text-sm ${
-                    selectedTab === 'hat'
-                      ? 'bg-purple-600 text-white shadow-lg'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Hats
-                </button>
-                <button
-                  onClick={() => setSelectedTab('eyewear')}
-                  className={`py-3 px-2 rounded-xl font-semibold transition-all text-sm ${
-                    selectedTab === 'eyewear'
-                      ? 'bg-purple-600 text-white shadow-lg'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Eyewear
-                </button>
-              </>
-            )}
+          <div className="grid grid-cols-4 gap-2 mb-6">
             <button
               onClick={() => setSelectedTab('toy')}
               className={`py-3 px-2 rounded-xl font-semibold transition-all text-sm ${
@@ -350,18 +316,18 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
             </button>
           </div>
 
-          {currentAccessory && (selectedTab === 'hat' || selectedTab === 'eyewear' || selectedTab === 'toy') && (
+          {currentAccessory && selectedTab === 'toy' && (
             <div className="mb-6 p-4 bg-green-50 border-2 border-green-500 rounded-xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-4xl">{currentAccessory}</span>
                   <div>
                     <p className="font-bold text-green-800">Currently Equipped</p>
-                    <p className="text-sm text-green-600">Your pet is wearing this {selectedTab}</p>
+                    <p className="text-sm text-green-600">Your pet is wearing this toy</p>
                   </div>
                 </div>
                 <button
-                  onClick={() => removeItem(selectedTab as 'hat' | 'eyewear' | 'toy')}
+                  onClick={() => removeItem('toy')}
                   className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"
                 >
                   Remove
@@ -370,13 +336,13 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
             </div>
           )}
 
-          {(selectedTab === 'hat' || selectedTab === 'eyewear' || selectedTab === 'toy') && (
+          {selectedTab === 'toy' && (
             <div className="mb-6 p-4 bg-purple-50 border-2 border-purple-400 rounded-xl">
               <p className="text-purple-800 font-semibold text-center">
-                ✨ Purchased accessories will be added to your inventory
+                ✨ Purchased toys will be added to your inventory
               </p>
               <p className="text-purple-600 text-sm text-center mt-1">
-                Open the Inventory to apply accessories to your pets!
+                Open the Inventory to apply toys to your pets!
               </p>
             </div>
           )}
