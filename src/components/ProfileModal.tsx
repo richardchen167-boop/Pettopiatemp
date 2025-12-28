@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, type Pet, type UserSettings } from '../lib/supabase';
-import { X, Edit2, Save, ArrowRightLeft, UserPlus, UserMinus } from 'lucide-react';
+import { X, Edit2, Save, UserPlus, UserMinus, Gift } from 'lucide-react';
 import { getUserSessionTime, formatTimeSpent } from '../hooks/useTimeTracking';
 
 const PET_EMOJIS: Record<Pet['type'], string> = {
@@ -70,9 +70,10 @@ interface ProfileModalProps {
   userId: string;
   ownerName: string;
   onClose: () => void;
+  onTradeClick?: () => void;
 }
 
-export function ProfileModal({ userId, ownerName, onClose }: ProfileModalProps) {
+export function ProfileModal({ userId, ownerName, onClose, onTradeClick }: ProfileModalProps) {
   const [userPets, setUserPets] = useState<Pet[]>([]);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -186,26 +187,6 @@ export function ProfileModal({ userId, ownerName, onClose }: ProfileModalProps) 
     }
   };
 
-  const sendTradeRequest = async (pet: Pet) => {
-    if (!currentUserId) return;
-
-    try {
-      await supabase
-        .from('trade_requests')
-        .insert({
-          sender_id: currentUserId,
-          recipient_id: pet.user_id,
-          sender_pet_id: '',
-          recipient_pet_id: pet.id,
-          message: `I'm interested in trading for ${pet.name}!`
-        });
-
-      alert('Trade request sent!');
-    } catch (error) {
-      console.error('Error sending trade request:', error);
-      alert('Failed to send trade request');
-    }
-  };
 
   const handleFollow = async () => {
     if (!currentUserId || currentUserId === userId) return;
@@ -261,26 +242,37 @@ export function ProfileModal({ userId, ownerName, onClose }: ProfileModalProps) 
             </button>
           </div>
           {!isOwnProfile && currentUserId && (
-            <button
-              onClick={handleFollow}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
-                isFollowing
-                  ? 'bg-white/20 hover:bg-white/30 text-white'
-                  : 'bg-white text-blue-600 hover:bg-blue-50'
-              }`}
-            >
-              {isFollowing ? (
-                <>
-                  <UserMinus size={18} />
-                  Unfollow
-                </>
-              ) : (
-                <>
-                  <UserPlus size={18} />
-                  Follow
-                </>
+            <div className="flex gap-2">
+              {canTrade && (
+                <button
+                  onClick={onTradeClick}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors bg-pink-500 hover:bg-pink-600 text-white"
+                >
+                  <Gift size={18} />
+                  Trade
+                </button>
               )}
-            </button>
+              <button
+                onClick={handleFollow}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  isFollowing
+                    ? 'bg-white/20 hover:bg-white/30 text-white'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                }`}
+              >
+                {isFollowing ? (
+                  <>
+                    <UserMinus size={18} />
+                    Unfollow
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={18} />
+                    Follow
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
 
@@ -404,15 +396,6 @@ export function ProfileModal({ userId, ownerName, onClose }: ProfileModalProps) 
                         <span>•</span>
                         <span>{pet.coins} 🪙</span>
                       </div>
-                      {canTrade && (
-                        <button
-                          onClick={() => sendTradeRequest(pet)}
-                          className="mt-2 w-full flex items-center justify-center gap-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-2 py-1.5 rounded text-xs font-semibold transition-colors"
-                        >
-                          <ArrowRightLeft size={12} />
-                          Trade
-                        </button>
-                      )}
                     </div>
                   ))}
                 </div>
