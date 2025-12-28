@@ -124,6 +124,17 @@ export interface TradeRequest {
   updated_at: string;
 }
 
+export interface TradeItem {
+  id: string;
+  trade_request_id: string;
+  sender_offering: boolean;
+  item_id: string;
+  item_type: 'hat' | 'eyewear' | 'toy' | 'furniture' | 'decor';
+  item_name: string;
+  item_emoji: string;
+  created_at: string;
+}
+
 export interface AdminUser {
   user_id: string;
   granted_by: string | null;

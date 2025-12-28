@@ -13,12 +13,14 @@ import { House } from './components/House';
 import { InventoryModal } from './components/InventoryModal';
 import { ProfileModal } from './components/ProfileModal';
 import { UpperAdminPanel } from './components/UpperAdminPanel';
+import { TradeAcceptModal } from './components/TradeAcceptModal';
 import { useTimeTracking, formatTimeSpent } from './hooks/useTimeTracking';
 import { AuthScreen } from './components/AuthScreen';
 import { soundManager } from './lib/sounds';
 import { SoundControl } from './components/SoundControl';
 import { ChristmasDecorations } from './components/ChristmasDecorations';
 import { AnimatedSleigh } from './components/AnimatedSleigh';
+import { type TradeRequest } from './lib/supabase';
 
 function App() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -45,6 +47,8 @@ function App() {
   const [tradesEnabled, setTradesEnabled] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [username, setUsername] = useState('Anonymous');
+  const [pendingTrades, setPendingTrades] = useState<TradeRequest[]>([]);
+  const [selectedTrade, setSelectedTrade] = useState<TradeRequest | null>(null);
   const { totalTimeSeconds } = useTimeTracking(userId || '');
 
   const isNovember = new Date().getMonth() === 10;
@@ -128,6 +132,9 @@ function App() {
     const onlineCheckInterval = setInterval(() => {
       loadOnlineUsers();
     }, 30000);
+    const tradeCheckInterval = setInterval(() => {
+      loadPendingTrades();
+    }, 15000);
 
     return () => {
       clearInterval(statsInterval);
@@ -136,6 +143,7 @@ function App() {
       clearInterval(dragonInterval);
       clearInterval(activityInterval);
       clearInterval(onlineCheckInterval);
+      clearInterval(tradeCheckInterval);
 
       if (userId) {
         (async () => {
@@ -266,8 +274,26 @@ function App() {
         .maybeSingle();
 
       setTradesEnabled(data?.trades_enabled || false);
+      await loadPendingTrades();
     } catch (error) {
       console.error('Error loading trade settings:', error);
+    }
+  };
+
+  const loadPendingTrades = async () => {
+    if (!userId) return;
+
+    try {
+      const { data } = await supabase
+        .from('trade_requests')
+        .select('*')
+        .eq('recipient_id', userId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      setPendingTrades(data || []);
+    } catch (error) {
+      console.error('Error loading pending trades:', error);
     }
   };
 
@@ -1791,6 +1817,28 @@ function App() {
           currentUserId={userId}
           isSuperAdmin={isSuperAdmin}
         />
+      )}
+      {selectedTrade && userId && (
+        <TradeAcceptModal
+          trade={selectedTrade}
+          currentUserId={userId}
+          onClose={() => setSelectedTrade(null)}
+          onComplete={() => {
+            setSelectedTrade(null);
+            loadPendingTrades();
+          }}
+        />
+      )}
+      {pendingTrades.length > 0 && !selectedTrade && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <button
+            onClick={() => setSelectedTrade(pendingTrades[0])}
+            className="bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-transform hover:scale-105 animate-bounce flex items-center gap-2"
+          >
+            <span className="text-xl">💱</span>
+            {pendingTrades.length} Trade{pendingTrades.length !== 1 ? 's' : ''}
+          </button>
+        </div>
       )}
     </div>
   );
