@@ -1,0 +1,51 @@
+/*
+  # Populate Rarity Loot Table
+  
+  Inserts sample accessories with various rarities for chest drops
+*/
+
+INSERT INTO rarity_loot_table (item_name, item_emoji, item_type, rarity) VALUES
+('Straw Hat', '🤠', 'hat', 'common'),
+('Baseball Cap', '⚾', 'hat', 'common'),
+('Beanie', '🧢', 'hat', 'common'),
+('Sunglasses', '😎', 'eyewear', 'common'),
+('Round Glasses', '🕶️', 'eyewear', 'common'),
+('Regular Toys', '🎾', 'toy', 'common'),
+('Ball', '⚽', 'toy', 'common'),
+('Wizard Hat', '🧙', 'hat', 'uncommon'),
+('Crown', '👑', 'hat', 'uncommon'),
+('Star Glasses', '⭐', 'eyewear', 'uncommon'),
+('Heart Shades', '❤️', 'eyewear', 'uncommon'),
+('Rubber Duck', '🦆', 'toy', 'uncommon'),
+('Frisbee', '🥏', 'toy', 'uncommon'),
+('Golden Crown', '🏆', 'hat', 'rare'),
+('Tiara', '💎', 'hat', 'rare'),
+('Monocle', '🧐', 'eyewear', 'rare'),
+('Fancy Goggles', '🛡️', 'eyewear', 'rare'),
+('Teddy Bear', '🧸', 'toy', 'rare'),
+('Yo-Yo', '📿', 'toy', 'rare'),
+('Diamond Tiara', '💍', 'hat', 'hyper rare'),
+('Dragon Helm', '🐉', 'hat', 'hyper rare'),
+('Phoenix Goggles', '🔥', 'eyewear', 'hyper rare'),
+('Crystal Visor', '✨', 'eyewear', 'hyper rare'),
+('Magic Wand', '🪄', 'toy', 'hyper rare'),
+('Enchanted Orb', '🔮', 'toy', 'hyper rare'),
+('Crown of Stars', '⭐👑', 'hat', 'legendary'),
+('Celestial Helm', '🌟', 'hat', 'legendary'),
+('Cosmic Goggles', '🌌', 'eyewear', 'legendary'),
+('Void Visor', '👾', 'eyewear', 'legendary'),
+('Ancient Artifact', '⚱️', 'toy', 'legendary'),
+('Legendary Sword', '⚔️', 'toy', 'legendary'),
+('Godly Crown', '⚡👑', 'hat', 'mythical'),
+('Eternal Helm', '🌠', 'hat', 'mythical'),
+('All-Seeing Eye', '👁️', 'eyewear', 'mythical'),
+('Infinity Visor', '∞', 'eyewear', 'mythical'),
+('Philosopher Stone', '🪨', 'toy', 'mythical'),
+('Holy Grail', '🏺', 'toy', 'mythical'),
+('Panther Crown', '🐆👑', 'hat', 'impossible'),
+('Infinite Helm', '♾️', 'hat', 'impossible'),
+('Singularity Visor', '🌀', 'eyewear', 'impossible'),
+('Chaos Goggles', '⚡', 'eyewear', 'impossible'),
+('Void Fragment', '◼️', 'toy', 'impossible'),
+('Mystery Box', '🎁', 'toy', 'impossible')
+ON CONFLICT DO NOTHING;

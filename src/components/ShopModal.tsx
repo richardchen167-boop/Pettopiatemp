@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Coins } from 'lucide-react';
+import { X, Coins, Gift } from 'lucide-react';
 import { supabase, type Pet, type ShopItem } from '../lib/supabase';
+import { ChestOpeningModal } from './ChestOpeningModal';
 
 interface ShopModalProps {
   pet: Pet;
@@ -13,10 +14,13 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const isBird = pet.type === 'bird';
-  const [selectedTab, setSelectedTab] = useState<'hat' | 'eyewear' | 'toy' | 'furniture' | 'decor'>(isBird ? 'toy' : 'hat');
+  const [selectedTab, setSelectedTab] = useState<'hat' | 'eyewear' | 'toy' | 'furniture' | 'decor' | 'chest'>(isBird ? 'toy' : 'hat');
+  const [chestCount, setChestCount] = useState(0);
+  const [showChestOpening, setShowChestOpening] = useState(false);
 
   useEffect(() => {
     loadShopItems();
+    loadChestCount();
   }, []);
 
   const loadShopItems = async () => {
@@ -32,6 +36,104 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
       console.error('Error loading shop items:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadChestCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('user_chests')
+        .select('quantity')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      setChestCount(data?.quantity || 0);
+    } catch (error) {
+      console.error('Error loading chest count:', error);
+    }
+  };
+
+  const buyChest = async () => {
+    if (purchasing) return;
+    if (pet.coins < 200) {
+      alert("Not enough coins! Chests cost 200 coins.");
+      return;
+    }
+
+    setPurchasing(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("Please log in to make purchases");
+        setPurchasing(false);
+        return;
+      }
+
+      const { data: existingChests } = await supabase
+        .from('user_chests')
+        .select('quantity')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingChests) {
+        await supabase
+          .from('user_chests')
+          .update({ quantity: existingChests.quantity + 1 })
+          .eq('user_id', user.id);
+      } else {
+        await supabase
+          .from('user_chests')
+          .insert({
+            user_id: user.id,
+            quantity: 1
+          });
+      }
+
+      await supabase
+        .from('pets')
+        .update({
+          coins: pet.coins - 200,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', pet.id);
+
+      setChestCount((prev) => prev + 1);
+      onPurchase();
+    } catch (error) {
+      console.error('Error buying chest:', error);
+      alert('Purchase failed. Please try again.');
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const openChest = async () => {
+    if (chestCount <= 0) {
+      alert("You don't have any chests!");
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: chests } = await supabase
+      .from('user_chests')
+      .select('quantity')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (chests && chests.quantity > 0) {
+      await supabase
+        .from('user_chests')
+        .update({ quantity: chests.quantity - 1 })
+        .eq('user_id', user.id);
+
+      setChestCount((prev) => Math.max(0, prev - 1));
+      setShowChestOpening(true);
     }
   };
 
@@ -181,7 +283,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
             </div>
           ) : null}
 
-          <div className="grid grid-cols-5 gap-2 mb-6">
+          <div className="grid grid-cols-6 gap-2 mb-6">
             {!isBird && (
               <>
                 <button
@@ -236,6 +338,16 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
             >
               Decor
             </button>
+            <button
+              onClick={() => setSelectedTab('chest')}
+              className={`py-3 px-2 rounded-xl font-semibold transition-all text-sm flex items-center justify-center gap-1 ${
+                selectedTab === 'chest'
+                  ? 'bg-amber-600 text-white shadow-lg'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              <Gift size={16} /> Chests
+            </button>
           </div>
 
           {currentAccessory && (selectedTab === 'hat' || selectedTab === 'eyewear' || selectedTab === 'toy') && (
@@ -280,11 +392,85 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
             </div>
           )}
 
-          {loading ? (
+          {selectedTab === 'chest' && (
+            <div>
+              <div className="mb-6 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-400 rounded-xl text-center">
+                <div className="text-6xl mb-4">🎁</div>
+                <p className="text-amber-800 font-bold text-lg mb-2">Mystery Chests</p>
+                <p className="text-amber-600 mb-4">
+                  Purchase a chest for 200 coins and open it to receive a random pet accessory!
+                </p>
+                <div className="grid grid-cols-3 gap-4 mb-6 text-center">
+                  <div>
+                    <div className="text-sm text-amber-600 font-bold">Common</div>
+                    <div className="text-lg font-bold text-amber-800">45%</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-green-600 font-bold">Uncommon</div>
+                    <div className="text-lg font-bold text-green-800">30%</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-blue-600 font-bold">Rare</div>
+                    <div className="text-lg font-bold text-blue-800">15%</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-purple-600 font-bold">Hyper Rare</div>
+                    <div className="text-lg font-bold text-purple-800">6%</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-yellow-600 font-bold">Legendary</div>
+                    <div className="text-lg font-bold text-yellow-800">3%</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-red-600 font-bold">Mythical</div>
+                    <div className="text-lg font-bold text-red-800">1%</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-6 rounded-xl border-2 border-amber-300 bg-amber-50 text-center">
+                  <div className="text-5xl mb-3">🎁</div>
+                  <h3 className="font-bold text-amber-800 mb-2">Buy Chest</h3>
+                  <p className="text-sm text-amber-600 mb-4">200 coins</p>
+                  <button
+                    onClick={buyChest}
+                    disabled={pet.coins < 200 || purchasing}
+                    className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+                      pet.coins >= 200 && !purchasing
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {purchasing ? 'Processing...' : 'Buy'}
+                  </button>
+                </div>
+
+                <div className="p-6 rounded-xl border-2 border-orange-300 bg-orange-50 text-center">
+                  <div className="text-5xl mb-3">✨</div>
+                  <h3 className="font-bold text-orange-800 mb-2">Open Chest</h3>
+                  <p className="text-sm text-orange-600 mb-4">You have {chestCount}</p>
+                  <button
+                    onClick={openChest}
+                    disabled={chestCount === 0}
+                    className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+                      chestCount > 0
+                        ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {chestCount > 0 ? 'Open' : 'No Chests'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {loading && selectedTab !== 'chest' ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Loading items...</p>
             </div>
-          ) : (
+          ) : selectedTab !== 'chest' ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredItems.map((item) => {
                 const isEquipped = (item.type === 'hat' || item.type === 'eyewear' || item.type === 'toy')
@@ -330,9 +516,18 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
                 );
               })}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
+      {showChestOpening && (
+        <ChestOpeningModal
+          onClose={() => setShowChestOpening(false)}
+          onItemReceived={() => {
+            setShowChestOpening(false);
+            onPurchase();
+          }}
+        />
+      )}
     </div>
   );
 }
