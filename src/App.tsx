@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CirclePlus as PlusCircle, RefreshCw, Package, User, ShieldAlert } from 'lucide-react';
+import { CirclePlus as PlusCircle, Package, User, ShieldAlert } from 'lucide-react';
 import { supabase, type Pet, PET_EVENTS, type PetEventType, ACTIVITIES, type ActivityType, type HouseInventoryItem } from './lib/supabase';
 import { PetCard } from './components/PetCard';
 import { AdoptPetModal } from './components/AdoptPetModal';
@@ -1574,17 +1574,7 @@ function App() {
             className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
           >
             <Package size={24} />
-            Inventory
-          </button>
-          <button
-            onClick={() => {
-              soundManager.play('click');
-              loadPets();
-            }}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
-          >
-            <RefreshCw size={24} />
-            Refresh
+            Shop
           </button>
         </div>
 
