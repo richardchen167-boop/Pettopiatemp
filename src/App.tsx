@@ -1574,6 +1574,16 @@ function App() {
             className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
           >
             <Package size={24} />
+            Inventory
+          </button>
+          <button
+            onClick={() => {
+              soundManager.play('click');
+              setShowInventory(true);
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105"
+          >
+            <Package size={24} />
             Shop
           </button>
         </div>
