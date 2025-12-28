@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Coins, Gift } from 'lucide-react';
 import { supabase, type Pet, type ShopItem } from '../lib/supabase';
 import { ChestOpeningModal } from './ChestOpeningModal';
+import { LootTableModal } from './LootTableModal';
 
 interface ShopModalProps {
   pet: Pet;
@@ -17,6 +18,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
   const [chestCount, setChestCount] = useState(0);
   const [showChestOpening, setShowChestOpening] = useState(false);
   const [chestPurchaseInProgress, setChestPurchaseInProgress] = useState(false);
+  const [showLootTable, setShowLootTable] = useState(false);
 
   useEffect(() => {
     loadShopItems();
@@ -411,7 +413,7 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="p-6 rounded-xl border-2 border-amber-300 bg-amber-50 text-center">
                   <div className="text-5xl mb-3">🎁</div>
                   <h3 className="font-bold text-amber-800 mb-2">Buy Chest</h3>
@@ -443,6 +445,18 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
                     }`}
                   >
                     {chestCount > 0 ? 'Open' : 'No Chests'}
+                  </button>
+                </div>
+
+                <div className="p-6 rounded-xl border-2 border-blue-300 bg-blue-50 text-center">
+                  <div className="text-5xl mb-3">📚</div>
+                  <h3 className="font-bold text-blue-800 mb-2">View Loot</h3>
+                  <p className="text-sm text-blue-600 mb-4">All items</p>
+                  <button
+                    onClick={() => setShowLootTable(true)}
+                    className="w-full py-3 rounded-lg font-semibold transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    View Table
                   </button>
                 </div>
               </div>
@@ -510,6 +524,9 @@ export function ShopModal({ pet, onClose, onPurchase }: ShopModalProps) {
             onPurchase();
           }}
         />
+      )}
+      {showLootTable && (
+        <LootTableModal onClose={() => setShowLootTable(false)} />
       )}
     </div>
   );
