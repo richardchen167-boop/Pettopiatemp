@@ -19,6 +19,7 @@ interface GlobalPetsSidebarProps {
   isUpperAdmin?: boolean;
   isNovember?: boolean;
   isDecember?: boolean;
+  onTradeInitiate?: (userId: string, userName: string) => void;
 }
 
 interface BannedUser {
@@ -35,7 +36,7 @@ interface Snowflake {
   delay: number;
 }
 
-export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isDecember }: GlobalPetsSidebarProps) {
+export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isDecember, onTradeInitiate }: GlobalPetsSidebarProps) {
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
   const [uniqueUserCount, setUniqueUserCount] = useState(0);
@@ -472,6 +473,10 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
           userId={selectedProfile.userId}
           ownerName={selectedProfile.ownerName}
           onClose={() => setSelectedProfile(null)}
+          onTradeClick={() => {
+            onTradeInitiate?.(selectedProfile.userId, selectedProfile.ownerName);
+            setSelectedProfile(null);
+          }}
         />
       )}
     </>

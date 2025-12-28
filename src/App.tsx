@@ -14,6 +14,7 @@ import { InventoryModal } from './components/InventoryModal';
 import { ProfileModal } from './components/ProfileModal';
 import { UpperAdminPanel } from './components/UpperAdminPanel';
 import { TradeAcceptModal } from './components/TradeAcceptModal';
+import { TradeInitiateModal } from './components/TradeInitiateModal';
 import { useTimeTracking, formatTimeSpent } from './hooks/useTimeTracking';
 import { AuthScreen } from './components/AuthScreen';
 import { soundManager } from './lib/sounds';
@@ -49,6 +50,8 @@ function App() {
   const [username, setUsername] = useState('Anonymous');
   const [pendingTrades, setPendingTrades] = useState<TradeRequest[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<TradeRequest | null>(null);
+  const [tradeWithUserId, setTradeWithUserId] = useState<string | null>(null);
+  const [tradeWithUserName, setTradeWithUserName] = useState<string>('');
   const { totalTimeSeconds } = useTimeTracking(userId || '');
 
   const isNovember = new Date().getMonth() === 10;
@@ -1680,7 +1683,16 @@ function App() {
         />
       )}
 
-      <GlobalPetsSidebar currentUserId={userId || undefined} isUpperAdmin={showUpperAdmin} isNovember={isNovember} isDecember={isDecember} />
+      <GlobalPetsSidebar
+        currentUserId={userId || undefined}
+        isUpperAdmin={showUpperAdmin}
+        isNovember={isNovember}
+        isDecember={isDecember}
+        onTradeInitiate={(userId, userName) => {
+          setTradeWithUserId(userId);
+          setTradeWithUserName(userName);
+        }}
+      />
       <MusicPlayer onAdminUnlock={() => {
         setIsAdminMode(true);
         showMessage('Admin mode activated! You can now control all pets!');
@@ -1818,6 +1830,22 @@ function App() {
           isSuperAdmin={isSuperAdmin}
         />
       )}
+      {tradeWithUserId && userId && (
+        <TradeInitiateModal
+          recipientUserId={tradeWithUserId}
+          recipientName={tradeWithUserName}
+          currentUserId={userId}
+          onClose={() => {
+            setTradeWithUserId(null);
+            setTradeWithUserName('');
+          }}
+          onComplete={() => {
+            setTradeWithUserId(null);
+            setTradeWithUserName('');
+            loadPendingTrades();
+          }}
+        />
+      )}
       {selectedTrade && userId && (
         <TradeAcceptModal
           trade={selectedTrade}
@@ -1830,10 +1858,10 @@ function App() {
         />
       )}
       {pendingTrades.length > 0 && !selectedTrade && (
-        <div className="fixed bottom-6 right-6 z-40">
+        <div className="fixed bottom-6 right-6 z-[100]">
           <button
             onClick={() => setSelectedTrade(pendingTrades[0])}
-            className="bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-transform hover:scale-105 animate-bounce flex items-center gap-2"
+            className="bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-pink-500 text-white px-6 py-3 rounded-xl font-bold shadow-2xl transition-transform hover:scale-105 animate-bounce flex items-center gap-2"
           >
             <span className="text-xl">💱</span>
             {pendingTrades.length} Trade{pendingTrades.length !== 1 ? 's' : ''}
