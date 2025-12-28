@@ -46,18 +46,23 @@ export function House({ userId, onClose }: HouseProps) {
     if (!previewItem) return;
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('house_inventory')
         .update({
           placed: true,
           room: previewItem.room,
-          position_x: previewItem.x,
-          position_y: previewItem.y
+          position_x: Math.round(previewItem.x),
+          position_y: Math.round(previewItem.y)
         })
         .eq('id', previewItem.item.id);
 
-      await loadPlacedItems();
+      if (error) {
+        console.error('Database error:', error);
+        return;
+      }
+
       setPreviewItem(null);
+      await loadPlacedItems();
     } catch (error) {
       console.error('Error placing item:', error);
     }
@@ -133,17 +138,23 @@ export function House({ userId, onClose }: HouseProps) {
 
     if (draggingItem !== 'preview') {
       const item = placedItems.find(i => i.id === draggingItem);
-      if (item) {
+      if (item && item.position_x !== null && item.position_y !== null) {
         try {
-          await supabase
+          const { error } = await supabase
             .from('house_inventory')
             .update({
-              position_x: item.position_x,
-              position_y: item.position_y
+              position_x: Math.round(item.position_x),
+              position_y: Math.round(item.position_y)
             })
             .eq('id', item.id);
+
+          if (error) {
+            console.error('Error updating position:', error);
+            await loadPlacedItems();
+          }
         } catch (error) {
           console.error('Error updating item position:', error);
+          await loadPlacedItems();
         }
       }
     }
