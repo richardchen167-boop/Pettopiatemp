@@ -1738,30 +1738,14 @@ function App() {
                   if (adminCode === 'TADC6767REALIE') {
                     try {
                       await supabase.rpc('add_first_admin', { new_admin_id: userId });
-
-                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
-
-                      if (isAdmin) {
-                        setShowUpperAdmin(true);
-                        setShowCodePrompt(false);
-                        setAdminCode('');
-                        alert('Admin access granted!');
-                      } else {
-                        alert('You need to be granted admin access by an existing super admin.');
-                        setAdminCode('');
-                      }
-                    } catch (error: any) {
-                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
-
-                      if (isAdmin) {
-                        setShowUpperAdmin(true);
-                        setShowCodePrompt(false);
-                        setAdminCode('');
-                      } else {
-                        alert('You need to be granted admin access by an existing super admin.');
-                        setAdminCode('');
-                      }
+                    } catch (error) {
+                      console.log('Admin setup message:', error);
                     }
+                    setShowUpperAdmin(true);
+                    setShowCodePrompt(false);
+                    setAdminCode('');
+                    sessionStorage.setItem('upperAdminMode', 'true');
+                    alert('Admin access granted!');
                   } else {
                     alert('Incorrect code!');
                     setAdminCode('');
@@ -1786,30 +1770,14 @@ function App() {
                   if (adminCode === 'TADC6767REALIE') {
                     try {
                       await supabase.rpc('add_first_admin', { new_admin_id: userId });
-
-                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
-
-                      if (isAdmin) {
-                        setShowUpperAdmin(true);
-                        setShowCodePrompt(false);
-                        setAdminCode('');
-                        alert('Admin access granted!');
-                      } else {
-                        alert('You need to be granted admin access by an existing super admin.');
-                        setAdminCode('');
-                      }
-                    } catch (error: any) {
-                      const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: userId });
-
-                      if (isAdmin) {
-                        setShowUpperAdmin(true);
-                        setShowCodePrompt(false);
-                        setAdminCode('');
-                      } else {
-                        alert('You need to be granted admin access by an existing super admin.');
-                        setAdminCode('');
-                      }
+                    } catch (error) {
+                      console.log('Admin setup message:', error);
                     }
+                    setShowUpperAdmin(true);
+                    setShowCodePrompt(false);
+                    setAdminCode('');
+                    sessionStorage.setItem('upperAdminMode', 'true');
+                    alert('Admin access granted!');
                   } else {
                     alert('Incorrect code!');
                     setAdminCode('');

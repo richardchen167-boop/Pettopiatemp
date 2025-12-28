@@ -85,6 +85,8 @@ export function ProfileModal({ userId, ownerName, onClose, onTradeClick }: Profi
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [selectedPetsForBio, setSelectedPetsForBio] = useState<string[]>([]);
 
   useEffect(() => {
     loadProfile();
@@ -124,6 +126,15 @@ export function ProfileModal({ userId, ownerName, onClose, onTradeClick }: Profi
         setUserSettings(settings);
         setEditedBio(settings.bio || '');
         setEditedDisplayName(settings.display_name || '');
+        try {
+          const bioData = settings.bio ? JSON.parse(settings.bio) : null;
+          if (bioData && bioData.featured_pets) {
+            setSelectedPetsForBio(bioData.featured_pets);
+            setEditedBio(bioData.text || '');
+          }
+        } catch {
+          // Bio is plain text, not JSON
+        }
       }
 
       const time = await getUserSessionTime(userId);
@@ -166,11 +177,17 @@ export function ProfileModal({ userId, ownerName, onClose, onTradeClick }: Profi
     if (!currentUserId || currentUserId !== userId) return;
 
     try {
+      const bioData = {
+        text: editedBio,
+        featured_pets: selectedPetsForBio,
+        show_stats: showStats
+      };
+
       const { error } = await supabase
         .from('user_settings')
         .upsert({
           user_id: userId,
-          bio: editedBio,
+          bio: JSON.stringify(bioData),
           display_name: editedDisplayName || null,
           updated_at: new Date().toISOString()
         }, {
@@ -304,7 +321,7 @@ export function ProfileModal({ userId, ownerName, onClose, onTradeClick }: Profi
               </div>
 
               {isEditing ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Display Name (optional)
@@ -334,11 +351,63 @@ export function ProfileModal({ userId, ownerName, onClose, onTradeClick }: Profi
                       {editedBio.length}/500 characters
                     </p>
                   </div>
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium text-gray-700">Featured Pets & Stats</label>
+                      <button
+                        onClick={() => setShowStats(!showStats)}
+                        className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
+                          showStats
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {showStats ? 'Hide' : 'Show'} Stats
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">Select up to 3 pets to feature on your profile</p>
+                    <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                      {userPets.map((pet) => (
+                        <button
+                          key={pet.id}
+                          onClick={() => {
+                            if (selectedPetsForBio.includes(pet.id)) {
+                              setSelectedPetsForBio(selectedPetsForBio.filter(id => id !== pet.id));
+                            } else if (selectedPetsForBio.length < 3) {
+                              setSelectedPetsForBio([...selectedPetsForBio, pet.id]);
+                            }
+                          }}
+                          className={`p-2 rounded-lg border-2 transition-all text-center ${
+                            selectedPetsForBio.includes(pet.id)
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                          } ${selectedPetsForBio.length >= 3 && !selectedPetsForBio.includes(pet.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={selectedPetsForBio.length >= 3 && !selectedPetsForBio.includes(pet.id)}
+                        >
+                          <div className="text-2xl">{PET_EMOJIS[pet.type]}</div>
+                          <div className="text-xs font-bold text-gray-800 truncate">{pet.name}</div>
+                          <div className="text-xs text-gray-600">Lv.{pet.level}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <p className="text-gray-700 whitespace-pre-wrap">
-                  {userSettings?.bio || 'No bio yet.'}
-                </p>
+                <div>
+                  <p className="text-gray-700 whitespace-pre-wrap mb-2">
+                    {typeof userSettings?.bio === 'string' ?
+                      (() => {
+                        try {
+                          const bioData = JSON.parse(userSettings.bio);
+                          return bioData.text || 'No bio yet.';
+                        } catch {
+                          return userSettings.bio || 'No bio yet.';
+                        }
+                      })()
+                      : 'No bio yet.'
+                    }
+                  </p>
+                </div>
               )}
             </div>
 
@@ -374,6 +443,28 @@ export function ProfileModal({ userId, ownerName, onClose, onTradeClick }: Profi
                 <div className="text-sm text-gray-600">Time Spent</div>
               </div>
             </div>
+
+            {!isEditing && selectedPetsForBio.length > 0 && (
+              <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-4">
+                <h3 className="font-bold text-gray-800 mb-3">Featured Pets</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {selectedPetsForBio.map((petId) => {
+                    const pet = userPets.find(p => p.id === petId);
+                    if (!pet) return null;
+                    return (
+                      <div
+                        key={pet.id}
+                        className="bg-white rounded-lg p-3 text-center border-2 border-yellow-200"
+                      >
+                        <div className="text-4xl mb-2">{PET_EMOJIS[pet.type]}</div>
+                        <h4 className="font-bold text-gray-800 text-sm">{pet.name}</h4>
+                        <div className="text-xs text-gray-600 mt-1">Lv. {pet.level}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div>
               <h3 className="font-bold text-gray-800 mb-3">My Pets</h3>
