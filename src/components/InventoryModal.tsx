@@ -78,6 +78,15 @@ export function InventoryModal({
   const handleApplyAccessory = async (accessory: AccessoryInventoryItem) => {
     if (!selectedPetForAccessory) return;
 
+    const pet = activePets.find(p => p.id === selectedPetForAccessory);
+    if (!pet) return;
+
+    const currentAccessoryEmoji = pet.accessories[accessory.item_type as 'hat' | 'toy' | 'eyewear'];
+    if (currentAccessoryEmoji) {
+      alert(`Your pet already has a ${accessory.item_type} equipped. Remove it first before applying a new one.`);
+      return;
+    }
+
     await onApplyAccessory(
       selectedPetForAccessory,
       accessory.item_type,

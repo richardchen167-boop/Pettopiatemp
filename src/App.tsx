@@ -884,6 +884,11 @@ function App() {
       const pet = pets.find(p => p.id === petId);
       if (!pet) return;
 
+      if (pet.accessories[accessoryType]) {
+        showMessage(`Remove the current ${accessoryType} before applying a new one`);
+        return;
+      }
+
       const newAccessories = { ...pet.accessories };
       newAccessories[accessoryType] = emoji;
 
