@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Droplets, Battery, UtensilsCrossed, Trash2, Wine, Star, Coins, MapPin, Clock, Package, X } from 'lucide-react';
+import { Heart, Droplets, Battery, UtensilsCrossed, Trash2, Wine, Star, Coins, MapPin, Clock, Package, X, ShoppingBag } from 'lucide-react';
 import type { Pet } from '../lib/supabase';
 import { PET_EVENTS } from '../lib/supabase';
 import { getUserSessionTime, formatTimeSpent } from '../hooks/useTimeTracking';
@@ -11,6 +11,7 @@ interface PetCardProps {
   onClean: () => void;
   onGiveWater: () => void;
   onPlayWithToy: () => void;
+  onOpenShop: () => void;
   onOpenActivities: () => void;
   onDelete: () => void;
   onDeactivate: () => void;
@@ -80,7 +81,7 @@ const petEmojis = {
   sheep: '🐑'
 } as const;
 
-export function PetCard({ pet, onFeed, onPlay, onClean, onGiveWater, onPlayWithToy, onOpenActivities, onDelete, onDeactivate, onUnequipAccessory }: PetCardProps) {
+export function PetCard({ pet, onFeed, onPlay, onClean, onGiveWater, onPlayWithToy, onOpenShop, onOpenActivities, onDelete, onDeactivate, onUnequipAccessory }: PetCardProps) {
   const [ownerTimeSeconds, setOwnerTimeSeconds] = useState(0);
 
   useEffect(() => {
@@ -408,18 +409,27 @@ export function PetCard({ pet, onFeed, onPlay, onClean, onGiveWater, onPlayWithT
               }
             </button>
           )}
-          <button
-            onClick={onOpenActivities}
-            disabled={pet.is_sleeping}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-colors shadow-md ${
-              pet.is_sleeping
-                ? 'bg-gray-400 cursor-not-allowed text-white'
-                : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white'
-            }`}
-          >
-            <MapPin size={18} />
-            Activities
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={onOpenActivities}
+              disabled={pet.is_sleeping}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-colors shadow-md ${
+                pet.is_sleeping
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white'
+              }`}
+            >
+              <MapPin size={18} />
+              Activities
+            </button>
+            <button
+              onClick={onOpenShop}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-xl font-semibold transition-colors shadow-md"
+            >
+              <ShoppingBag size={18} />
+              Shop
+            </button>
+          </div>
         </div>
       </div>
     </div>

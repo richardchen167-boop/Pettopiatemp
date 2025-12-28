@@ -1625,6 +1625,7 @@ function App() {
                     onClean={canControl ? () => cleanPet(pet) : () => showMessage("You can only interact with your own pets!")}
                     onGiveWater={canControl ? () => giveWater(pet) : () => showMessage("You can only interact with your own pets!")}
                     onPlayWithToy={canControl ? () => playWithToy(pet) : () => showMessage("You can only interact with your own pets!")}
+                    onOpenShop={canControl ? () => setSelectedPetForShop(pet) : () => showMessage("You can only interact with your own pets!")}
                     onOpenActivities={canControl ? () => setSelectedPetForActivities(pet) : () => showMessage("You can only interact with your own pets!")}
                     onDelete={canControl ? () => deletePet(pet) : () => showMessage("You can only interact with your own pets!")}
                     onDeactivate={canControl ? () => handleDeactivatePet(pet.id) : () => showMessage("You can only interact with your own pets!")}
