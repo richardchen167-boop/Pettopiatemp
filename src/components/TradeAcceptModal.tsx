@@ -229,6 +229,26 @@ export function TradeAcceptModal({ trade, currentUserId, onClose, onComplete }: 
     }
   };
 
+  const handleDecline = async () => {
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('trade_requests')
+        .delete()
+        .eq('id', trade.id);
+
+      if (error) throw error;
+
+      onComplete();
+      onClose();
+    } catch (error) {
+      console.error('Error declining trade:', error);
+      alert('Failed to decline trade');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleFinalizeTrade = async () => {
     setProcessing(true);
     try {
@@ -424,10 +444,11 @@ export function TradeAcceptModal({ trade, currentUserId, onClose, onComplete }: 
 
         <div className="flex gap-4 mt-8">
           <button
-            onClick={onClose}
-            className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
+            onClick={handleDecline}
+            disabled={processing}
+            className="flex-1 px-6 py-3 rounded-xl border-2 border-red-400 text-red-700 font-bold hover:bg-red-50 transition-colors disabled:opacity-50"
           >
-            Decline
+            {processing ? 'Declining...' : 'Decline'}
           </button>
           <button
             onClick={toggleConfirm}

@@ -116,6 +116,7 @@ function App() {
     ensureUserSettings();
     checkBanStatus();
     checkAdminStatus();
+    loadPendingTrades();
 
     const statsInterval = setInterval(() => {
       degradeStats();
@@ -135,9 +136,50 @@ function App() {
     const onlineCheckInterval = setInterval(() => {
       loadOnlineUsers();
     }, 30000);
-    const tradeCheckInterval = setInterval(() => {
-      loadPendingTrades();
-    }, 15000);
+
+    const subscription = supabase
+      .channel('trade_requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trade_requests',
+          filter: `recipient_id=eq.${userId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new?.status === 'pending') {
+            loadPendingTrades();
+          }
+          if (payload.eventType === 'UPDATE') {
+            if (payload.new?.status !== 'pending') {
+              loadPendingTrades();
+            } else {
+              loadPendingTrades();
+            }
+          }
+          if (payload.eventType === 'DELETE') {
+            loadPendingTrades();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trade_requests',
+          filter: `sender_id=eq.${userId}`
+        },
+        (payload: any) => {
+          if (selectedTrade?.id === payload.new?.id || selectedTrade?.id === payload.old?.id) {
+            if (payload.new?.status !== 'pending') {
+              setSelectedTrade(null);
+            }
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
       clearInterval(statsInterval);
@@ -146,7 +188,7 @@ function App() {
       clearInterval(dragonInterval);
       clearInterval(activityInterval);
       clearInterval(onlineCheckInterval);
-      clearInterval(tradeCheckInterval);
+      supabase.removeChannel(subscription);
 
       if (userId) {
         (async () => {
@@ -165,7 +207,7 @@ function App() {
         })();
       }
     };
-  }, [isAuthenticated, userId, username]);
+  }, [isAuthenticated, userId, username, selectedTrade?.id]);
 
   useEffect(() => {
     sessionStorage.setItem('upperAdminMode', String(showUpperAdmin));
@@ -287,14 +329,26 @@ function App() {
     if (!userId) return;
 
     try {
-      const { data } = await supabase
+      const { data: receivedTrades } = await supabase
         .from('trade_requests')
         .select('*')
         .eq('recipient_id', userId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      setPendingTrades(data || []);
+      const { data: sentTrades } = await supabase
+        .from('trade_requests')
+        .select('*')
+        .eq('sender_id', userId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      const allTrades = [
+        ...(receivedTrades || []),
+        ...(sentTrades || [])
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setPendingTrades(allTrades);
     } catch (error) {
       console.error('Error loading pending trades:', error);
     }
