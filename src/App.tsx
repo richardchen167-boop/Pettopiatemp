@@ -15,6 +15,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { UpperAdminPanel } from './components/UpperAdminPanel';
 import { TradeAcceptModal } from './components/TradeAcceptModal';
 import { TradeInitiateModal } from './components/TradeInitiateModal';
+import { IncomingTradeNotification } from './components/IncomingTradeNotification';
 import { useTimeTracking, formatTimeSpent } from './hooks/useTimeTracking';
 import { AuthScreen } from './components/AuthScreen';
 import { soundManager } from './lib/sounds';
@@ -50,6 +51,8 @@ function App() {
   const [username, setUsername] = useState('Anonymous');
   const [pendingTrades, setPendingTrades] = useState<TradeRequest[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<TradeRequest | null>(null);
+  const [showIncomingNotification, setShowIncomingNotification] = useState(false);
+  const [incomingTrade, setIncomingTrade] = useState<TradeRequest | null>(null);
   const [tradeWithUserId, setTradeWithUserId] = useState<string | null>(null);
   const [tradeWithUserName, setTradeWithUserName] = useState<string>('');
   const { totalTimeSeconds } = useTimeTracking(userId || '');
@@ -349,6 +352,11 @@ function App() {
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setPendingTrades(allTrades);
+
+      if (receivedTrades && receivedTrades.length > 0 && !selectedTrade) {
+        setIncomingTrade(receivedTrades[0]);
+        setShowIncomingNotification(true);
+      }
     } catch (error) {
       console.error('Error loading pending trades:', error);
     }
@@ -1885,7 +1893,17 @@ function App() {
           }}
         />
       )}
-      {pendingTrades.length > 0 && !selectedTrade && (
+      {showIncomingNotification && userId && (
+        <IncomingTradeNotification
+          incomingTrade={incomingTrade}
+          onOpenTrade={(trade) => setSelectedTrade(trade)}
+          onClose={() => {
+            setShowIncomingNotification(false);
+            setIncomingTrade(null);
+          }}
+        />
+      )}
+      {pendingTrades.length > 0 && !selectedTrade && !showIncomingNotification && (
         <div className="fixed bottom-6 right-6 z-[100]">
           <button
             onClick={() => setSelectedTrade(pendingTrades[0])}
