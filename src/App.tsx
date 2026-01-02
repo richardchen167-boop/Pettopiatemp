@@ -1889,6 +1889,8 @@ function App() {
           onClose={() => setSelectedTrade(null)}
           onComplete={() => {
             setSelectedTrade(null);
+            setShowIncomingNotification(false);
+            setIncomingTrade(null);
             loadPendingTrades();
           }}
         />
