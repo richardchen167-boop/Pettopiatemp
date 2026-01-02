@@ -252,13 +252,6 @@ export function TradeAcceptModal({ trade, currentUserId, onClose, onComplete }: 
   const handleFinalizeTrade = async () => {
     setProcessing(true);
     try {
-      const { error } = await supabase
-        .from('trade_requests')
-        .update({ status: 'accepted' })
-        .eq('id', trade.id);
-
-      if (error) throw error;
-
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-trade`;
       const response = await fetch(apiUrl, {
         method: 'POST',
