@@ -72,8 +72,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (trade.sender_id !== user.id && trade.recipient_id !== user.id) {
-      return new Response("You are not part of this trade", {
+    if (trade.recipient_id !== user.id) {
+      return new Response("Only recipient can accept this trade", {
         status: 403,
         headers: corsHeaders,
       });
@@ -81,13 +81,6 @@ Deno.serve(async (req: Request) => {
 
     if (trade.status !== "pending") {
       return new Response("Trade is no longer pending", {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
-    if (!trade.sender_confirmed || !trade.recipient_confirmed) {
-      return new Response("Both parties must confirm before finalizing", {
         status: 400,
         headers: corsHeaders,
       });
