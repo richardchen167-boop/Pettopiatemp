@@ -374,6 +374,12 @@ function App() {
 
       if (data) {
         setIsSuperAdmin(data.is_super_admin);
+      } else {
+        setIsSuperAdmin(false);
+        if (showUpperAdmin) {
+          setShowUpperAdmin(false);
+          sessionStorage.removeItem('upperAdminMode');
+        }
       }
     } catch (error) {
       console.error('Error checking admin status:', error);
@@ -1809,11 +1815,24 @@ function App() {
                     } catch (error) {
                       console.log('Admin setup message:', error);
                     }
-                    setShowUpperAdmin(true);
-                    setShowCodePrompt(false);
-                    setAdminCode('');
-                    sessionStorage.setItem('upperAdminMode', 'true');
-                    alert('Admin access granted!');
+
+                    const { data: adminCheck } = await supabase
+                      .from('admin_users')
+                      .select('user_id')
+                      .eq('user_id', userId)
+                      .maybeSingle();
+
+                    if (adminCheck) {
+                      setShowUpperAdmin(true);
+                      setShowCodePrompt(false);
+                      setAdminCode('');
+                      sessionStorage.setItem('upperAdminMode', 'true');
+                      alert('Admin access granted!');
+                      await checkAdminStatus();
+                    } else {
+                      alert('Failed to grant admin access. Another admin may need to grant you access.');
+                      setAdminCode('');
+                    }
                   } else {
                     alert('Incorrect code!');
                     setAdminCode('');
@@ -1841,11 +1860,24 @@ function App() {
                     } catch (error) {
                       console.log('Admin setup message:', error);
                     }
-                    setShowUpperAdmin(true);
-                    setShowCodePrompt(false);
-                    setAdminCode('');
-                    sessionStorage.setItem('upperAdminMode', 'true');
-                    alert('Admin access granted!');
+
+                    const { data: adminCheck } = await supabase
+                      .from('admin_users')
+                      .select('user_id')
+                      .eq('user_id', userId)
+                      .maybeSingle();
+
+                    if (adminCheck) {
+                      setShowUpperAdmin(true);
+                      setShowCodePrompt(false);
+                      setAdminCode('');
+                      sessionStorage.setItem('upperAdminMode', 'true');
+                      alert('Admin access granted!');
+                      await checkAdminStatus();
+                    } else {
+                      alert('Failed to grant admin access. Another admin may need to grant you access.');
+                      setAdminCode('');
+                    }
                   } else {
                     alert('Incorrect code!');
                     setAdminCode('');
