@@ -76,6 +76,7 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
       if (error) throw error;
 
       const uniqueUserIds = allUsers?.map(u => u.user_id) || [];
+      setUniqueUserCount(uniqueUserIds.length);
 
       const times: Record<string, number> = {};
       const userInfos: UserInfo[] = [];
@@ -124,7 +125,6 @@ export function GlobalPetsSidebar({ currentUserId, isUpperAdmin, isNovember, isD
       setOwnerTimes(times);
       setUsers(userInfos);
       setBannedUsers(banned);
-      setUniqueUserCount(userInfos.length);
     } catch (error) {
       console.error('Error loading users:', error);
     }

@@ -34,44 +34,41 @@ export function IncomingTradeNotification({ incomingTrade, onOpenTrade, onClose 
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[150]">
-        <div className="bg-white rounded-3xl p-12">
-          <p className="text-gray-500 text-lg">Loading trade request...</p>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[150] p-4">
+        <div className="bg-white rounded-3xl p-8">
+          <p className="text-gray-500">Loading trade request...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[150]">
-      <div className="bg-gradient-to-br from-pink-100 to-pink-50 rounded-3xl shadow-2xl p-8 sm:p-12 w-full max-w-2xl border-4 border-pink-300 mx-4">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-4xl sm:text-5xl font-bold text-pink-600">Trade Request!</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[150] p-4">
+      <div className="bg-gradient-to-br from-pink-100 to-pink-50 rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full border-4 border-pink-300">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-pink-600">Trade Request!</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
           >
-            <X size={32} className="sm:w-8 sm:h-8" />
+            <X size={24} className="sm:w-7 sm:h-7" />
           </button>
         </div>
 
-        <div className="text-center py-8 sm:py-12">
-          <div className="text-8xl sm:text-9xl mb-6">💱</div>
-          <p className="text-xl sm:text-2xl text-gray-700 mb-4">
-            <span className="font-bold text-pink-600">{senderName}</span>
+        <div className="text-center py-6 sm:py-8">
+          <div className="text-5xl sm:text-6xl mb-4">💱</div>
+          <p className="text-base sm:text-lg text-gray-700 mb-6">
+            <span className="font-bold text-pink-600">{senderName}</span> wants to trade with you!
           </p>
-          <p className="text-lg sm:text-xl text-gray-700 mb-8">
-            wants to trade with you!
-          </p>
-          <p className="text-sm sm:text-base text-gray-500">
+          <p className="text-xs sm:text-sm text-gray-500">
             Click below to see what they're offering.
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-6 sm:px-8 py-3 sm:py-4 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors text-base sm:text-lg"
+            className="flex-1 px-4 sm:px-6 py-2 sm:py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors text-sm sm:text-base"
           >
             Dismiss
           </button>
@@ -80,7 +77,7 @@ export function IncomingTradeNotification({ incomingTrade, onOpenTrade, onClose 
               onOpenTrade(incomingTrade);
               onClose();
             }}
-            className="flex-1 px-6 sm:px-8 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-pink-500 to-pink-400 text-white font-bold hover:shadow-lg transition-all text-base sm:text-lg"
+            className="flex-1 px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-gradient-to-r from-pink-500 to-pink-400 text-white font-bold hover:shadow-lg transition-all text-sm sm:text-base"
           >
             View Trade
           </button>
