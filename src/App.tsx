@@ -157,12 +157,16 @@ function App() {
           if (payload.eventType === 'UPDATE') {
             if (payload.new?.status !== 'pending') {
               loadPendingTrades();
+              setShowIncomingNotification(false);
+              setIncomingTrade(null);
             } else {
               loadPendingTrades();
             }
           }
           if (payload.eventType === 'DELETE') {
             loadPendingTrades();
+            setShowIncomingNotification(false);
+            setIncomingTrade(null);
           }
         }
       )
@@ -175,10 +179,15 @@ function App() {
           filter: `sender_id=eq.${userId}`
         },
         (payload: any) => {
-          if (selectedTrade?.id === payload.new?.id || selectedTrade?.id === payload.old?.id) {
-            if (payload.new?.status !== 'pending') {
+          if (payload.eventType === 'UPDATE') {
+            if (payload.new?.status === 'accepted') {
+              setSelectedTrade(payload.new);
+            } else if (payload.new?.status !== 'pending') {
               setSelectedTrade(null);
             }
+          }
+          if (payload.eventType === 'DELETE') {
+            setSelectedTrade(null);
           }
         }
       )
